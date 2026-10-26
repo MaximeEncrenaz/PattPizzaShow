@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#120c09">
+  <title>PattinPizzaShow</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='31' fill='%23d8402a'/%3E%3Cpath d='M32 13 L49 45 Q32 52 15 45 Z' fill='%23f7c95a'/%3E%3Cpath d='M15 45 Q32 52 49 45' fill='none' stroke='%23d98a3a' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='31' cy='28' r='3.6' fill='%23c42a17'/%3E%3Ccircle cx='26' cy='38' r='3.2' fill='%23c42a17'/%3E%3Ccircle cx='38' cy='39' r='3.4' fill='%23c42a17'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Manrope:wght@400;500;600;700;800&display=swap">
+  <style>
+    :root {
+      --bg: #120c09;
+      --surface: #211711;
+      --surface-2: #2a1e16;
+      --surface-3: #35271c;
+      --line: rgba(255, 232, 200, .10);
+      --line-2: rgba(255, 232, 200, .18);
+      --text: #f8ecdc;
+      --muted: #bba68f;
+      --faint: #8f7a66;
+      --gold: #eab968;
+      --gold-light: #f5d08f;
+      --tomato: #e4472d;
+      --tomato-dark: #b92f19;
+      --basil: #67b35b;
+      --error: #ff9483;
+      --radius: 22px;
+      --shadow: 0 28px 60px -28px rgba(0, 0, 0, .8);
+      --display: "Fraunces", Georgia, "Times New Roman", serif;
+      --sans: "Manrope", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { overflow-x: hidden; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--text);
+      background:
+        radial-gradient(1100px 620px at 88% -12%, rgba(228, 71, 45, .24), transparent 62%),
+        radial-gradient(900px 520px at -8% 108%, rgba(234, 185, 104, .13), transparent 62%),
+        var(--bg);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Film grain over the whole page, for a printed-menu texture. */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: .07;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .app { position: relative; z-index: 1; }
+
+    /* ---- Top bar: logo, tabs, signed-in participant ---- */
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(18, 12, 9, .74);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+    }
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 14px 32px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; flex: none; }
+    .brand .logo { width: 46px; height: 46px; filter: drop-shadow(0 8px 16px rgba(228, 71, 45, .4)); }
+    h1.wordmark {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -.01em;
+      line-height: 1;
+    }
+    .wordmark em { font-style: italic; font-weight: 400; color: var(--gold); }
+    .wordmark small {
+      display: block;
+      margin-top: 6px;
+      font-family: var(--sans);
+      font-size: .66rem;
+      font-weight: 700;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+
+    nav.tabs {
+      display: flex;
+      gap: 4px;
+      margin: 0 auto;
+      padding: 5px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+    }
+    nav.tabs button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 8px 18px;
+      font-size: .92rem;
+      font-weight: 700;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-radius: 999px;
+      transition: color .2s, background .2s;
+    }
+    nav.tabs button svg { width: 18px; height: 18px; }
+    nav.tabs button:hover { color: var(--text); }
+    nav.tabs button[aria-selected="true"] {
+      color: #1d110a;
+      background: linear-gradient(180deg, var(--gold-light), var(--gold));
+      box-shadow: 0 8px 20px -8px rgba(234, 185, 104, .7);
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 260px;
+      margin: 0;
+      padding: 5px 16px 5px 5px;
+      font-weight: 700;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+    }
+    .user-chip .initial {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      font-family: var(--display);
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, #f07b3f, var(--tomato));
+      border-radius: 50%;
+    }
+    .user-chip .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ---- Page and section headings ---- */
+
+    main.page { max-width: 1180px; margin: 0 auto; padding: 44px 32px 80px; }
+    .section-head { margin-bottom: 30px; }
+    .eyebrow {
+      margin: 0;
+      font-size: .74rem;
+      font-weight: 800;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    h2.title {
+      margin: 8px 0 0;
+      font-family: var(--display);
+      font-size: 2.7rem;
+      font-weight: 500;
+      line-height: 1.05;
+      letter-spacing: -.02em;
+    }
+    h2.title em, .hero h2 em { font-style: italic; color: var(--gold); }
+    .lead { margin: 10px 0 0; max-width: 60ch; color: var(--muted); }
+
+    .card {
+      background: linear-gradient(180deg, var(--surface-2), var(--surface));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 26px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ---- Forms and buttons ---- */
+
+    label { display: block; margin-bottom: 8px; font-size: .9rem; font-weight: 700; }
+
+    input[type="text"] {
+      width: 100%;
+      min-height: 52px;
+      padding: 12px 16px;
+      font: inherit;
+      color: var(--text);
+      background: rgba(0, 0, 0, .28);
+      border: 1px solid var(--line-2);
+      border-radius: 14px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input[type="text"]:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 4px rgba(234, 185, 104, .18); }
+
+    button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 52px;
+      margin-top: 16px;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: .01em;
+      color: #fff;
+      background: linear-gradient(180deg, #ef5a3d, var(--tomato-dark));
+      border: 0;
+      border-radius: 14px;
+      box-shadow: 0 16px 30px -14px rgba(228, 71, 45, .8), inset 0 1px 0 rgba(255, 255, 255, .25);
+      transition: transform .15s, filter .2s;
+    }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn-primary:active:not(:disabled) { transform: translateY(1px); }
+    .btn-primary:disabled { cursor: not-allowed; color: var(--faint); background: var(--surface-3); box-shadow: none; }
+
+    .btn-secondary {
+      min-height: 46px;
+      padding: 10px 20px;
+      font-weight: 700;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid var(--line-2);
+      border-radius: 14px;
+      transition: background .2s, border-color .2s;
+    }
+    .btn-secondary:hover { background: rgba(255, 236, 210, .06); border-color: var(--gold); }
+
+    .error { margin: 10px 0 0; color: var(--error); font-weight: 700; }
+    .error:empty { display: none; }
+    .hint, .muted { color: var(--muted); }
+    .hint { margin: 14px 0 0; font-size: .9rem; }
+
+    input[type="file"] { display: block; width: 100%; font: inherit; font-size: .92rem; color: var(--muted); }
+    input[type="file"]:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+    input[type="file"]::file-selector-button {
+      min-height: 42px;
+      margin-right: 12px;
+      padding: 8px 16px;
+      font: inherit;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--surface-3);
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    input[type="file"]::file-selector-button:hover { border-color: var(--gold); }
+    .photo-field { margin-top: 18px; }
+    .photo-preview { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+    .photo-preview[hidden] { display: none; }
+
+    /* ---- Pizza visuals: a photo, or the illustrated pizza when there is none ---- */
+
+    .thumb {
+      flex: none;
+      display: block;
+      width: 96px;
+      height: 96px;
+      object-fit: cover;
+      border-radius: 18px;
+      border: 1px solid var(--line-2);
+    }
+    .thumb-art {
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at 50% 42%, #4a3322, #1d140e 78%);
+    }
+    .thumb-art .pizza-art { width: 82%; height: auto; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .5)); }
+
+    .media {
+      position: relative;
+      display: grid;
+      place-items: center;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 44%, #4a3322, #1a120d 76%);
+    }
+    .media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .media .pizza-art { width: 64%; height: auto; filter: drop-shadow(0 22px 26px rgba(0, 0, 0, .6)); }
+
+    .layer { opacity: 0; transform: scale(.82); transform-origin: 100px 100px; transition: opacity .25s, transform .3s cubic-bezier(.3, 1.6, .5, 1); }
+    .layer.on { opacity: 1; transform: none; }
+
+    .pizza-name { margin: 0; font-family: var(--display); font-size: 1.45rem; font-weight: 500; line-height: 1.2; overflow-wrap: anywhere; }
+    .author { margin: 4px 0 0; font-size: .92rem; color: var(--muted); overflow-wrap: anywhere; }
+
+    /* ---- Pseudo screen ---- */
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      align-items: center;
+      gap: 56px;
+      min-height: calc(100vh - 170px);
+    }
+    .hero h2 {
+      margin: 16px 0 0;
+      font-family: var(--display);
+      font-size: 4.3rem;
+      font-weight: 500;
+      line-height: .98;
+      letter-spacing: -.03em;
+    }
+    .hero .lead { font-size: 1.12rem; }
+    .hero form { max-width: 440px; margin-top: 34px; }
+    .hero-art { position: relative; justify-self: center; width: 100%; max-width: 500px; aspect-ratio: 1; }
+    .hero-art .glow {
+      position: absolute;
+      inset: 6%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(228, 71, 45, .5), transparent 66%);
+      filter: blur(34px);
+    }
+    .hero-art > .pizza-art {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 44px 50px rgba(0, 0, 0, .65));
+      animation: spin 120s linear infinite;
+    }
+    .float {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 82px;
+      height: 82px;
+      background: rgba(42, 30, 22, .86);
+      border: 1px solid var(--line-2);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+      animation: bob 6s ease-in-out infinite;
+    }
+    .float svg { width: 54px; height: 54px; }
+    .float.f1 { top: 2%; left: -2%; }
+    .float.f2 { top: 14%; right: -4%; animation-delay: -1.5s; }
+    .float.f3 { bottom: 6%; left: 4%; animation-delay: -3s; }
+    .float.f4 { bottom: 0; right: 10%; animation-delay: -4.5s; }
+
+    /* ---- Ma pizza ---- */
+
+    .split { display: grid; grid-template-columns: 1.2fr .8fr; gap: 24px; align-items: start; }
+    .aside { position: relative; overflow: hidden; text-align: center; }
+    .aside .pizza-art { width: 72%; height: auto; margin: 6px auto 0; display: block; filter: drop-shadow(0 24px 28px rgba(0, 0, 0, .6)); }
+    .aside h3 { margin: 18px 0 0; font-family: var(--display); font-size: 1.35rem; font-weight: 500; }
+    .tips { list-style: none; margin: 14px 0 0; padding: 0; text-align: left; color: var(--muted); font-size: .92rem; }
+    .tips li { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+    .tips li::before { content: "✦"; color: var(--gold); }
+
+    .feature { display: grid; grid-template-columns: 360px 1fr; gap: 0; padding: 0; overflow: hidden; }
+    .feature .media { aspect-ratio: 1; }
+    .feature .body { padding: 34px 36px; }
+    .feature .pizza-name { font-size: 2.2rem; margin-top: 8px; }
+    .big-score { margin: 22px 0 0; font-family: var(--display); font-size: 3.4rem; font-weight: 500; line-height: 1; color: var(--gold); }
+    .big-score span { font-size: 1.2rem; color: var(--muted); }
+    .stat { margin: 6px 0 0; }
+    .edit-pizza { margin-top: 24px; }
+    .form-eyebrow { margin-bottom: 16px; }
+    .cancel-edit { width: 100%; margin-top: 10px; }
+
+    /* ---- Voter ---- */
+
+    .pizza-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+    .pizza-card { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+    .pizza-card .media { border-bottom: 1px solid var(--line); }
+    .pizza-card .body { display: flex; flex: 1; flex-direction: column; padding: 20px 22px 22px; }
+
+    .scores { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 18px; }
+    .scores button {
+      min-height: 42px;
+      font-weight: 800;
+      color: var(--text);
+      background: rgba(0, 0, 0, .24);
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .scores button:hover { color: var(--gold); border-color: var(--gold); }
+    .scores button[aria-pressed="true"] {
+      color: #1d110a;
+      background: linear-gradient(180deg, var(--gold-light), var(--gold));
+      border-color: transparent;
+    }
+    .final { margin: 10px 0 0; font-size: .8rem; color: var(--faint); text-align: center; }
+    .my-score {
+      align-self: flex-start;
+      margin: 18px 0 0;
+      padding: 6px 14px;
+      font-weight: 800;
+      color: var(--gold);
+      background: rgba(234, 185, 104, .12);
+      border: 1px solid rgba(234, 185, 104, .35);
+      border-radius: 999px;
+    }
+
+    /* Public votes: one chip per voter with their score. */
+    .votes { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; padding: 0; }
+    .votes li {
+      padding: 3px 11px;
+      font-size: .82rem;
+      color: var(--muted);
+      background: rgba(255, 236, 210, .05);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow-wrap: anywhere;
+    }
+    .votes li strong { color: var(--gold); }
+
+    /* ---- Classement ---- */
+
+    .ranking { list-style: none; display: grid; gap: 14px; margin: 0; padding: 0; }
+    .ranking li.row {
+      display: grid;
+      grid-template-columns: 64px 96px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px 22px;
+      padding: 16px 26px 16px 18px;
+      background: linear-gradient(180deg, var(--surface-2), var(--surface));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .ranking .rank {
+      font-family: var(--display);
+      font-size: 2.5rem;
+      font-style: italic;
+      font-weight: 500;
+      line-height: 1;
+      text-align: center;
+      color: var(--faint);
+    }
+    .ranking li.row.top-1 {
+      border-color: rgba(234, 185, 104, .5);
+      background: linear-gradient(90deg, rgba(234, 185, 104, .14), transparent 55%), linear-gradient(180deg, var(--surface-2), var(--surface));
+    }
+    .ranking li.row.top-1 .rank { color: var(--gold); font-size: 3rem; }
+    .ranking li.row.top-2 .rank { color: #d9dde2; }
+    .ranking li.row.top-3 .rank { color: #d39a68; }
+    .ranking li.row.mine { box-shadow: inset 0 0 0 1px var(--basil), var(--shadow); }
+    .mine-tag {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 9px;
+      font-family: var(--sans);
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      vertical-align: middle;
+      color: #0f1a0d;
+      background: var(--basil);
+      border-radius: 999px;
+    }
+    .ranking .info { min-width: 0; }
+    .ranking .score { text-align: right; }
+    .ranking .avg { margin: 0; font-family: var(--display); font-size: 2rem; font-weight: 500; line-height: 1.1; white-space: nowrap; }
+    .ranking .avg span { font-size: 1rem; color: var(--muted); }
+    .ranking .count { margin: 2px 0 0; font-size: .88rem; color: var(--muted); white-space: nowrap; }
+    .ranking .none { margin: 0; font-size: .9rem; color: var(--muted); white-space: nowrap; }
+    .ranking .votes { grid-column: 3 / -1; margin-top: 0; }
+
+    .empty { margin: 18px 0 0; color: var(--muted); text-align: center; }
+    .empty-state { padding: 56px 26px; text-align: center; }
+    .empty-state .pizza-art { width: 160px; height: auto; opacity: .5; filter: grayscale(.4) drop-shadow(0 16px 20px rgba(0, 0, 0, .5)); }
+    .empty-state .empty { font-size: 1.05rem; }
+
+    .loading { display: grid; place-items: center; gap: 14px; min-height: 60vh; }
+    .loading .pizza-art { width: 110px; height: auto; animation: spin 2.4s linear infinite; }
+
+    /* ---- Mini-games ---- */
+
+    .game-hero { display: grid; grid-template-columns: 1.1fr .9fr; padding: 0; overflow: hidden; }
+    .game-hero .art {
+      display: grid;
+      place-items: end center;
+      min-height: 380px;
+      padding: 36px 30px 0;
+      background:
+        radial-gradient(circle at 50% 78%, rgba(255, 140, 60, .35), transparent 55%),
+        linear-gradient(180deg, #2d1c13, #170f0b);
+      border-right: 1px solid var(--line);
+    }
+    .oven-art { width: 100%; max-width: 440px; height: auto; }
+    .game-hero .body { display: flex; flex-direction: column; justify-content: center; padding: 40px; }
+    h3.game-title { margin: 10px 0 0; font-family: var(--display); font-size: 2.4rem; font-weight: 500; line-height: 1.05; letter-spacing: -.02em; }
+    .game-rule { margin: 10px 0 0; font-size: 1.05rem; color: var(--muted); }
+    .icon-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 22px 0 0; padding: 0; list-style: none; }
+    .icon-row li {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      background: rgba(0, 0, 0, .25);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+    .icon-row svg { width: 30px; height: 30px; }
+    .best {
+      display: inline-flex;
+      align-self: flex-start;
+      align-items: center;
+      gap: 8px;
+      margin: 22px 0 0;
+      padding: 6px 14px;
+      font-weight: 700;
+      color: var(--gold);
+      background: rgba(234, 185, 104, .1);
+      border: 1px solid rgba(234, 185, 104, .3);
+      border-radius: 999px;
+    }
+    .game-hero .btn-primary { align-self: flex-start; width: auto; min-width: 200px; margin-top: 24px; font-size: 1.05rem; }
+
+    .play { display: grid; grid-template-columns: 1.3fr .7fr; gap: 24px; align-items: stretch; }
+    .scene { display: flex; flex-direction: column; padding: 22px 26px 26px; }
+
+    .scene-top { display: flex; align-items: stretch; gap: 12px; }
+    .game-stats { display: grid; flex: 1; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 0; }
+    .quit {
+      flex: none;
+      width: 48px;
+      font-size: 1.1rem;
+      color: var(--muted);
+      background: rgba(0, 0, 0, .22);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .quit:hover { color: var(--text); border-color: var(--line-2); }
+    .game-stats .stat {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0;
+      padding: 10px 16px;
+      background: rgba(0, 0, 0, .22);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .game-stats .stat strong { font-family: var(--display); font-size: 2rem; font-weight: 500; line-height: 1; }
+    .game-stats .stat span { font-size: .85rem; }
+    .clock { position: relative; display: grid; place-items: center; width: 54px; height: 54px; flex: none; }
+    .clock svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+    .clock .track { fill: none; stroke: rgba(255, 236, 210, .1); stroke-width: 5; }
+    .clock .ring { fill: none; stroke: var(--gold); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset .2s linear, stroke .3s; }
+    .clock strong { position: relative; font-size: 1.35rem !important; }
+    .stat.hurry .ring { stroke: var(--tomato); }
+    .stat.hurry strong { color: var(--tomato); animation: pulse .5s ease-in-out infinite alternate; }
+
+    .customer { display: flex; align-items: flex-start; gap: 16px; margin-top: 22px; }
+    .avatar-frame { flex: none; width: 84px; height: 84px; }
+    .avatar { width: 100%; height: 100%; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .5)); }
+    .bubble {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      padding: 14px 18px;
+      background: var(--text);
+      color: #22150d;
+      border-radius: 18px;
+    }
+    .bubble::before {
+      content: "";
+      position: absolute;
+      top: 24px;
+      left: -8px;
+      width: 16px;
+      height: 16px;
+      background: var(--text);
+      transform: rotate(45deg);
+      border-radius: 3px;
+    }
+    .order { position: relative; margin: 0; font-size: 1.05rem; overflow-wrap: anywhere; }
+    .order strong { font-family: var(--display); font-weight: 600; }
+    .order em { font-family: var(--display); font-style: italic; font-weight: 600; color: var(--tomato-dark); }
+    .order-items { position: relative; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; }
+    .order-items li {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 11px 3px 4px;
+      font-size: .85rem;
+      font-weight: 700;
+      background: #ead8bf;
+      border-radius: 999px;
+      transition: background .2s, color .2s;
+    }
+    .order-items li svg { width: 22px; height: 22px; }
+    .order-items li.added { color: #fff; background: #3f8f3a; }
+    .order-items li.added::after { content: "✓"; }
+
+    .board { --plate: 290px; position: relative; display: grid; flex: 1; place-items: center; margin-top: 18px; }
+    .plate {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: var(--plate);
+      height: var(--plate);
+      background: radial-gradient(circle at 50% 38%, #7a5434, #4a3120 62%, #34221a);
+      border-radius: 50%;
+      box-shadow: 0 34px 44px -22px #000, inset 0 0 0 7px rgba(0, 0, 0, .2), inset 0 2px 0 rgba(255, 236, 210, .12);
+    }
+    .plate .pizza-art { width: 86%; height: auto; filter: drop-shadow(0 10px 12px rgba(0, 0, 0, .45)); }
+    .board.served .plate { animation: served .5s ease; }
+    .toast {
+      position: absolute;
+      top: 38%;
+      left: 50%;
+      padding: 8px 18px;
+      font-weight: 800;
+      color: #0f1a0d;
+      background: var(--basil);
+      border-radius: 999px;
+      box-shadow: 0 12px 24px -10px rgba(0, 0, 0, .7);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 0);
+    }
+    .board.served .toast { animation: toast .9s ease; }
+    .toast { z-index: 2; }
+
+    /* Half hidden behind the board: you have to want it. */
+    .pineapple {
+      position: absolute;
+      top: calc(50% + var(--plate) / 2 - 50px);
+      left: calc(50% + var(--plate) / 2 - 30px);
+      z-index: 0;
+      width: 54px;
+      height: 54px;
+      padding: 0;
+      background: none;
+      border: 0;
+      border-radius: 50%;
+      opacity: .6;
+      transform: rotate(24deg);
+      transition: opacity .2s, transform .25s;
+    }
+    .pineapple svg { width: 100%; height: 100%; }
+    .pineapple:hover, .pineapple:focus-visible { opacity: 1; transform: rotate(4deg) scale(1.12); }
+
+    /* The pizzaiolo's joke under each heading. */
+    .joke {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: -8px 0 28px;
+      padding: 14px 16px 14px 14px;
+      background: linear-gradient(90deg, rgba(234, 185, 104, .12), rgba(234, 185, 104, .03));
+      border: 1px dashed rgba(234, 185, 104, .35);
+      border-radius: 18px;
+    }
+    .joke-chef { flex: none; width: 48px; height: 48px; }
+    .joke-body { flex: 1; min-width: 0; }
+    .joke-label { margin: 0; font-size: .7rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); }
+    .joke-text { margin: 3px 0 0; font-family: var(--display); font-size: 1.08rem; font-style: italic; line-height: 1.35; }
+    .joke-next { flex: none; min-height: 40px; padding: 8px 14px; font-size: .88rem; }
+
+    .reaction { margin: 10px 0 0; font-size: .9rem; font-weight: 700; color: var(--gold); text-align: center; }
+    .rank-title { margin: 0 0 2px; font-size: .7rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
+    .ranking li.row:not(.top-1):not(.top-2):not(.top-3) .rank-title { color: var(--muted); }
+    .verdict { margin: 12px auto 4px; max-width: 34ch; font-family: var(--display); font-size: 1.1rem; font-style: italic; color: var(--text); }
+
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+    /* ---- The Famiglia: black screen, two mafiosi, a warning ---- */
+
+    .mafia {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      padding: 24px 16px;
+      overflow-y: auto;
+      background: radial-gradient(ellipse 60% 50% at 50% 55%, rgba(255, 236, 210, .08), transparent 70%), #000;
+      animation: blackout .6s ease both;
+    }
+    .mafia-inner { max-width: 860px; text-align: center; }
+    .mafiosi { display: flex; align-items: flex-end; justify-content: center; gap: 56px; }
+    .mafioso { display: flex; flex-direction: column; align-items: center; width: 260px; }
+    .mafioso-art { width: 220px; height: auto; filter: drop-shadow(0 0 40px rgba(255, 236, 210, .12)); }
+    .mafioso.m1 { animation: slide-left .8s .5s cubic-bezier(.2, .9, .3, 1) both; }
+    .mafioso.m2 { animation: slide-right .8s .9s cubic-bezier(.2, .9, .3, 1) both; }
+    .speech {
+      position: relative;
+      margin: 0 0 18px;
+      padding: 12px 16px;
+      font-size: 1.05rem;
+      line-height: 1.35;
+      color: #1a1a1a;
+      background: #f8ecdc;
+      border-radius: 16px;
+      animation: pop .4s cubic-bezier(.3, 1.6, .5, 1) both;
+    }
+    .speech::after {
+      content: "";
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      margin-left: -8px;
+      background: #f8ecdc;
+      border-radius: 3px;
+      transform: rotate(45deg);
+    }
+    .speech strong { display: block; margin-bottom: 2px; font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: #8b1a1a; }
+    .m1 .speech { animation-delay: 1.4s; }
+    .m2 .speech { animation-delay: 2.4s; }
+    .mafia-caption { margin: 28px 0 0; font-family: var(--display); font-size: 1.2rem; font-style: italic; color: var(--muted); animation: fade-in .6s 3.2s both; }
+    .mafia-close { width: auto; margin-top: 20px; animation: fade-in .6s 3.6s both; }
+
+    .ingredients { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-content: stretch; }
+    .ingredients button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 112px;
+      padding: 14px 10px;
+      font-size: .92rem;
+      font-weight: 700;
+      color: var(--text);
+      background: linear-gradient(180deg, var(--surface-2), var(--surface));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      touch-action: manipulation;
+      transition: transform .12s, border-color .2s, background .2s;
+    }
+    .ingredients button svg {
+      width: 64px;
+      height: 64px;
+      background: radial-gradient(circle, rgba(255, 236, 210, .16), transparent 68%);
+      border-radius: 50%;
+      filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .45));
+      transition: transform .2s;
+    }
+    .ingredients button:hover { border-color: var(--gold); transform: translateY(-2px); }
+    .ingredients button:hover svg { transform: scale(1.08) rotate(-5deg); }
+    .ingredients button:active { transform: translateY(1px) scale(.98); }
+    .ingredients button[aria-pressed="true"] { border-color: var(--basil); background: linear-gradient(180deg, rgba(103, 179, 91, .26), rgba(103, 179, 91, .08)); }
+    .ingredients button.wrong { border-color: var(--tomato); background: rgba(228, 71, 45, .28); animation: shake .3s; }
+
+    .end-card { max-width: 560px; margin: 0 auto; padding: 40px; text-align: center; }
+    .trophy { width: 120px; height: 120px; filter: drop-shadow(0 16px 24px rgba(234, 185, 104, .35)); }
+    .end-card h3.game-title { margin-top: 12px; }
+    .end-card .big-score { margin-top: 18px; }
+    .record {
+      display: inline-block;
+      margin: 16px 0 0;
+      padding: 6px 16px;
+      font-weight: 800;
+      color: #1d110a;
+      background: linear-gradient(180deg, var(--gold-light), var(--gold));
+      border-radius: 999px;
+      animation: pop .5s cubic-bezier(.3, 1.6, .5, 1);
+    }
+    .end-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 26px; }
+    .end-actions .btn-primary { margin-top: 0; }
+
+    /* ---- Motion ---- */
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes bob { 50% { transform: translateY(-12px) rotate(3deg); } }
+    @keyframes pulse { to { opacity: .55; } }
+    @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+    @keyframes served { 40% { transform: scale(1.06); box-shadow: 0 0 0 10px rgba(103, 179, 91, .35), 0 34px 44px -22px #000; } }
+    @keyframes toast { 0% { opacity: 0; transform: translate(-50%, 10px); } 25%, 70% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -14px); } }
+    @keyframes pop { from { transform: scale(.6); opacity: 0; } }
+    @keyframes blackout { from { opacity: 0; } }
+    @keyframes fade-in { from { opacity: 0; } }
+    @keyframes slide-left { from { opacity: 0; transform: translateX(-120px); } }
+    @keyframes slide-right { from { opacity: 0; transform: translateX(120px); } }
+    @keyframes flicker { 50% { transform: scaleY(1.08) translateY(-2px); } }
+    @keyframes smoke { from { opacity: .35; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-26px) scale(1.6); } }
+    .oven-art .flame { transform-box: fill-box; transform-origin: 50% 100%; animation: flicker .9s ease-in-out infinite; }
+    .oven-art .flame.f2 { animation-duration: .7s; animation-delay: -.3s; }
+    .oven-art .puff { transform-box: fill-box; transform-origin: center; animation: smoke 3.2s ease-out infinite; }
+    .oven-art .puff.p2 { animation-delay: -1.1s; }
+    .oven-art .puff.p3 { animation-delay: -2.2s; }
+
+    /* ---- Smaller screens ---- */
+
+    @media (max-width: 1024px) {
+      .pizza-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .topbar-inner, main.page { padding-left: 20px; padding-right: 20px; }
+    }
+
+    /* Smartphone: tabs move to a bottom bar within thumb reach, everything stacks in one column,
+       and a game round fits on one screen with the ingredients at the bottom. */
+    @media (max-width: 760px) {
+      .topbar { backdrop-filter: none; background: rgba(18, 12, 9, .96); padding-top: env(safe-area-inset-top); }
+      .topbar-inner { gap: 12px; padding: 10px 16px; }
+      .brand { gap: 10px; }
+      .brand .logo { width: 36px; height: 36px; }
+      h1.wordmark { font-size: 1.2rem; }
+      .wordmark small { display: none; }
+      .user-chip { margin-left: auto; padding: 3px; }
+      .user-chip .name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+      nav.tabs {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 6;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+        margin: 0;
+        padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+        background: rgba(24, 16, 12, .97);
+        border: 0;
+        border-top: 1px solid var(--line-2);
+        border-radius: 0;
+        box-shadow: 0 -12px 30px -12px rgba(0, 0, 0, .8);
+      }
+      nav.tabs button {
+        flex-direction: column;
+        gap: 3px;
+        min-height: 56px;
+        padding: 4px 2px;
+        font-size: .72rem;
+        border-radius: 14px;
+      }
+      nav.tabs button svg { width: 52px; height: 30px; padding: 5px 14px; border-radius: 999px; transition: background .2s; }
+      nav.tabs button[aria-selected="true"] { color: var(--gold); background: transparent; box-shadow: none; }
+      nav.tabs button[aria-selected="true"] svg { background: rgba(234, 185, 104, .18); }
+      .app.playing nav.tabs { display: none; }
+
+      main.page { padding: 22px 16px calc(96px + env(safe-area-inset-bottom)); }
+      .app.playing main.page { padding-top: 12px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
+      .section-head { margin-bottom: 20px; }
+      .eyebrow { font-size: .68rem; letter-spacing: .2em; }
+      h2.title { font-size: 2rem; }
+      .lead { font-size: .95rem; }
+      .card { padding: 18px; border-radius: 18px; }
+      .card.pizza-card, .card.game-hero, .card.feature { padding: 0; }
+
+      .hero { grid-template-columns: 1fr; gap: 8px; min-height: 0; }
+      .hero-art { order: -1; width: 74%; max-width: 280px; }
+      .float { width: 52px; height: 52px; border-radius: 16px; }
+      .float svg { width: 34px; height: 34px; }
+      .float.f1 { left: -14%; }
+      .float.f2 { right: -14%; }
+      .float.f3 { left: -8%; }
+      .float.f4 { right: -4%; }
+      .hero h2 { margin-top: 10px; font-size: 2.6rem; }
+      .hero .lead { font-size: 1rem; }
+      .hero form { max-width: none; margin-top: 22px; }
+
+      .split { grid-template-columns: 1fr; gap: 16px; }
+      .aside .pizza-art { width: 40%; }
+      .feature { grid-template-columns: 1fr; }
+      .feature .media { aspect-ratio: 16 / 10; }
+      .feature .body { padding: 20px; }
+      .feature .pizza-name { font-size: 1.7rem; }
+      .big-score { font-size: 2.7rem; }
+
+      .pizza-grid { grid-template-columns: 1fr; gap: 16px; }
+      .pizza-card .media { aspect-ratio: 16 / 9; }
+      .pizza-card .media .pizza-art { width: 46%; }
+      .pizza-card .body { padding: 16px 18px 18px; }
+      .scores { gap: 6px; }
+      .scores button { min-height: 48px; font-size: 1.05rem; }
+
+      .ranking { gap: 10px; }
+      .ranking li.row {
+        grid-template-columns: 30px 64px minmax(0, 1fr);
+        gap: 6px 14px;
+        padding: 14px 16px 14px 10px;
+        border-radius: 18px;
+      }
+      .ranking .rank, .ranking li.row.top-1 .rank { font-size: 1.9rem; }
+      .ranking .thumb { width: 64px; height: 64px; border-radius: 14px; }
+      .ranking .rank, .ranking .thumb { grid-row: span 2; }
+      .ranking .pizza-name { font-size: 1.15rem; }
+      .ranking .score { grid-column: 3; display: flex; align-items: baseline; gap: 8px; text-align: left; }
+      .ranking .avg { font-size: 1.35rem; }
+      .ranking .count, .ranking .none { margin: 0; }
+      .ranking .votes { grid-column: 1 / -1; margin-top: 4px; }
+
+      .game-hero { grid-template-columns: 1fr; }
+      .game-hero .art { min-height: 0; padding: 16px 18px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+      .oven-art { max-width: 250px; }
+      .game-hero .body { padding: 18px 18px 20px; }
+      h3.game-title { margin-top: 6px; font-size: 1.7rem; }
+      .game-rule { margin-top: 4px; font-size: .95rem; }
+      .icon-row { flex-wrap: nowrap; gap: 5px; margin-top: 14px; }
+      .icon-row li { width: 32px; height: 32px; border-radius: 10px; }
+      .icon-row svg { width: 24px; height: 24px; }
+      .best { margin-top: 14px; }
+      .game-hero .btn-primary { align-self: stretch; width: 100%; margin-top: 16px; }
+
+      /* The round fills the screen below the top bar, ingredients pinned at the bottom. */
+      .play {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto;
+        gap: 10px;
+        min-height: calc(100dvh - 96px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      }
+      .scene { padding: 12px; }
+      .scene-top { gap: 8px; }
+      .game-stats { gap: 6px; }
+      .game-stats .stat { flex-direction: column; justify-content: center; gap: 2px; padding: 6px 4px; border-radius: 12px; text-align: center; }
+      .game-stats .stat strong { font-size: 1.5rem; }
+      .game-stats .stat span { font-size: .7rem; }
+      .clock { width: 40px; height: 40px; }
+      .clock strong { font-size: 1.05rem !important; }
+      .quit { width: 44px; border-radius: 12px; }
+      .customer { gap: 10px; margin-top: 12px; }
+      .avatar-frame { width: 52px; height: 52px; }
+      .bubble { padding: 9px 12px; border-radius: 14px; }
+      .bubble::before { top: 16px; }
+      .order { font-size: .95rem; }
+      .order-items { gap: 4px; margin-top: 6px; }
+      .order-items li { padding: 2px 8px 2px 3px; font-size: .74rem; }
+      .order-items li svg { width: 18px; height: 18px; }
+      .board { margin-top: 8px; }
+      .board { --plate: min(58vw, 240px, 28dvh); }
+      .pineapple { width: 42px; height: 42px; top: calc(50% + var(--plate) / 2 - 40px); left: calc(50% + var(--plate) / 2 - 22px); }
+
+      .joke { gap: 12px; margin: -4px 0 20px; padding: 12px; flex-wrap: wrap; }
+      .joke-chef { width: 40px; height: 40px; align-self: flex-start; }
+      .joke-body { flex-basis: calc(100% - 52px); }
+      .joke-text { font-size: .98rem; }
+      .joke-next { margin-left: 52px; min-height: 36px; padding: 6px 12px; }
+
+      .mafiosi { gap: 8px; }
+      .mafioso { width: 50%; }
+      .mafioso-art { width: 100%; max-width: 160px; }
+      .speech { margin-bottom: 14px; padding: 9px 11px; font-size: .88rem; }
+      .mafia-caption { margin-top: 20px; font-size: 1.02rem; }
+      .mafia-close { width: 100%; }
+      .toast { top: 40%; }
+
+      .ingredients { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+      .ingredients button { gap: 2px; min-height: 78px; padding: 6px 2px; font-size: .7rem; border-radius: 14px; box-shadow: none; }
+      .ingredients button svg { width: 42px; height: 42px; }
+      .ingredients button span { white-space: nowrap; letter-spacing: -.01em; }
+
+      .end-card { padding: 26px 20px; }
+      .trophy { width: 96px; height: 96px; }
+      .end-actions { grid-template-columns: 1fr; }
+      .end-actions .btn-primary { order: -1; }
+    }
+
+    /* Short phones: tighter round so it still fits without scrolling. */
+    @media (max-width: 760px) and (max-height: 700px) {
+      .customer { margin-top: 8px; }
+      .avatar-frame { width: 44px; height: 44px; }
+      .ingredients button { min-height: 64px; }
+      .ingredients button svg { width: 34px; height: 34px; }
+    }
+
+    /* On touch screens a hover state sticks after the tap: keep only the pressed look. */
+    @media (hover: none) {
+      .ingredients button:not([aria-pressed="true"]):not(.wrong):hover { transform: none; border-color: var(--line); }
+      .ingredients button:hover svg { transform: none; }
+      .scores button:not([aria-pressed="true"]):hover { color: var(--text); border-color: var(--line-2); }
+      .btn-primary:hover:not(:disabled) { transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app"></div>
+
+  <script type="module">
+    // Storage: Firestore (project in firebase-config.js, access rules in firestore.rules).
+    // Each device signs in anonymously and its auth uid is its participant id:
+    //   participants/{uid} { pseudo, created_at }, pizzas/{uid} { participant_id, name, photo, created_at },
+    //   votes/{pizzaId}_{uid} { pizza_id, voter_id, score, created_at }.
+    // The three collections are listened to live and mirrored in `state`, with created_at as epoch milliseconds.
+    // Votes are public: the ranking and Ma pizza list each voter with their score.
+    // Averages and the ranking are computed from votes on every render, never stored.
+    // A pizza's photo is a reduced JPEG data URL, or '' for the illustrated pizza.
+    // Mini-games never touch Firestore: the best score stays on this device, in localStorage under
+    // pps-best-<game>-<uid> (for example pps-best-pizzaiolo-<uid>), as the number of pizzas served.
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import { firebaseConfig } from './firebase-config.js';
+
+    const PHOTO_PREFIX = 'data:image/jpeg;base64,';
+    const PHOTO_MAX_SIDE = 640;
+    const NETWORK_ERROR = 'Connexion impossible, réessaie dans un instant.';
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const db = getFirestore(firebaseApp);
+
+    const COLLECTIONS = ['participants', 'pizzas', 'votes'];
+    let state = { participants: [], pizzas: [], votes: [] };
+    // This device's participant id (its anonymous auth uid), set once signed in.
+    let myUid = null;
+    let currentTab = 'voter';
+    // Score picked but not yet confirmed, per pizza id.
+    const pendingScores = {};
+    // The Ma pizza form being filled in, kept across live re-renders: { editing, name, photo },
+    // where editing is true for a change to the submitted pizza. null when no form is open.
+    let pizzaDraft = null;
+
+    function currentParticipant() {
+      return myUid ? state.participants.find(p => p.id === myUid) || null : null;
+    }
+
+    function pseudoOf(participantId) {
+      const p = state.participants.find(x => x.id === participantId);
+      return p ? p.pseudo : '?';
+    }
+
+    // ---- Writes: validated here, then enforced again by firestore.rules. ----
+
+    function createParticipant(rawPseudo) {
+      const pseudo = String(rawPseudo).trim();
+      if (pseudo.length < 2 || pseudo.length > 20) return Promise.resolve({ error: 'Ton pseudo doit faire entre 2 et 20 caractères.' });
+      const lower = pseudo.toLowerCase();
+      if (state.participants.some(p => p.pseudo.toLowerCase() === lower)) return Promise.resolve({ error: 'Ce pseudo est déjà pris.' });
+      return write(doc(db, 'participants', myUid), { pseudo, created_at: serverTimestamp() }, NETWORK_ERROR);
+    }
+
+    function submitPizza(rawName, rawPhoto) {
+      const name = String(rawName).trim();
+      if (name.length < 1 || name.length > 40) return Promise.resolve({ error: 'Donne un nom à ta pizza (40 caractères max).' });
+      if (!currentParticipant()) return Promise.resolve({ error: 'Choisis d\'abord un pseudo.' });
+      if (state.pizzas.some(z => z.participant_id === myUid)) return Promise.resolve({ error: 'Tu as déjà soumis ta pizza.' });
+      const photo = isPhoto(rawPhoto) ? rawPhoto : '';
+      return write(doc(db, 'pizzas', myUid), { participant_id: myUid, name, photo, created_at: serverTimestamp() },
+        photo ? 'Envoi impossible : réessaie, ou soumets sans photo.' : NETWORK_ERROR);
+    }
+
+    function castVote(pizzaId, score) {
+      if (!Number.isInteger(score) || score < 1 || score > 10) return Promise.resolve({ error: 'Note invalide.' });
+      if (!currentParticipant()) return Promise.resolve({ error: 'Choisis d\'abord un pseudo.' });
+      const pizza = state.pizzas.find(z => z.id === pizzaId);
+      if (!pizza) return Promise.resolve({ error: 'Pizza introuvable.' });
+      if (pizza.participant_id === myUid) return Promise.resolve({ error: 'Tu ne peux pas voter pour ta propre pizza.' });
+      if (state.votes.some(v => v.pizza_id === pizzaId && v.voter_id === myUid)) return Promise.resolve({ error: 'Tu as déjà voté pour cette pizza.' });
+      return write(doc(db, 'votes', pizzaId + '_' + myUid), { pizza_id: pizzaId, voter_id: myUid, score, created_at: serverTimestamp() }, NETWORK_ERROR);
+    }
+
+    // Only the pizza's name and photo can change; votes stay attached to the pizza.
+    function updatePizza(rawName, rawPhoto) {
+      const name = String(rawName).trim();
+      if (name.length < 1 || name.length > 40) return Promise.resolve({ error: 'Donne un nom à ta pizza (40 caractères max).' });
+      if (!state.pizzas.some(z => z.participant_id === myUid)) return Promise.resolve({ error: 'Pizza introuvable.' });
+      const photo = isPhoto(rawPhoto) ? rawPhoto : '';
+      return updateDoc(doc(db, 'pizzas', myUid), { name, photo }).then(() => ({ ok: true }),
+        () => ({ error: photo ? 'Envoi impossible : réessaie, ou enregistre sans photo.' : NETWORK_ERROR }));
+    }
+
+    // Documents are create-only (a pizza's name and photo aside): a rejected write that passed
+    // the checks above means another device got there first or the network failed.
+    function write(ref, data, errorMessage) {
+      return setDoc(ref, data).then(() => ({ ok: true }), () => ({ error: errorMessage }));
+    }
+
+    // ---- Photos ----
+
+    // Stored data is untrusted: only a JPEG data URL is ever used as an image source.
+    function isPhoto(value) {
+      return typeof value === 'string' && value.startsWith(PHOTO_PREFIX);
+    }
+
+    // Decodes the picked file and redraws it as a JPEG whose longest side is at most 640px.
+    function reducePhoto(file) {
+      return new Promise((resolve, reject) => {
+        if (!file.type.startsWith('image/')) return reject(new Error('not an image'));
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+          const ctx = canvas.getContext('2d');
+          // JPEG has no transparency: transparent PNG areas become white, not black.
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('undecodable image'));
+        };
+        img.src = url;
+      });
+    }
+
+    // ---- Computed values ----
+
+    function pizzaStats(pizzaId) {
+      const scores = state.votes.filter(v => v.pizza_id === pizzaId).map(v => v.score);
+      const count = scores.length;
+      return { count, avg: count ? scores.reduce((a, b) => a + b, 0) / count : null };
+    }
+
+    function formatAvg(avg) {
+      return avg.toFixed(1).replace('.', ',') + ' / 10';
+    }
+
+    // Votes are public: every voter's pseudo and score, oldest vote first.
+    function votesList(pizzaId) {
+      return el('ul', { class: 'votes', 'aria-label': 'Notes reçues' },
+        state.votes.filter(v => v.pizza_id === pizzaId).sort(byCreatedAt).map(v =>
+          el('li', {}, [
+            document.createTextNode(pseudoOf(v.voter_id) + ' '),
+            el('strong', { text: v.score + '/10' })
+          ])
+        )
+      );
+    }
+
+    function formatCount(n) {
+      return n + (n === 1 ? ' vote' : ' votes');
+    }
+
+    function byCreatedAt(a, b) {
+      return a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0;
+    }
+
+    function ranking() {
+      return state.pizzas
+        .map(pizza => Object.assign({ pizza }, pizzaStats(pizza.id)))
+        .sort((a, b) => {
+          if ((a.avg === null) !== (b.avg === null)) return a.avg === null ? 1 : -1;
+          if (a.avg !== b.avg) return b.avg - a.avg;
+          if (a.count !== b.count) return b.count - a.count;
+          return byCreatedAt(a.pizza, b.pizza);
+        });
+    }
+
+    // ---- Illustrations: static SVG markup defined here, never built from stored data. ----
+
+    const LOGO = '<svg viewBox="0 0 64 64" class="logo"><defs><linearGradient id="pps-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f05a3c"/><stop offset="1" stop-color="#a82713"/></linearGradient></defs>' +
+      '<circle cx="32" cy="32" r="31" fill="url(#pps-logo)"/><circle cx="32" cy="32" r="27" fill="none" stroke="#eab968" stroke-width="1.4" stroke-dasharray="2 3"/>' +
+      '<path d="M32 12 L49 45 Q32 52 15 45 Z" fill="#f7c95a"/><path d="M15 45 Q32 52 49 45" fill="none" stroke="#d98a3a" stroke-width="5" stroke-linecap="round"/>' +
+      '<circle cx="31" cy="27" r="3.6" fill="#c42a17"/><circle cx="25.5" cy="38" r="3.2" fill="#c42a17"/><circle cx="38" cy="38.5" r="3.4" fill="#c42a17"/>' +
+      '<path d="M34 31 q3 -3.5 6 -.5 q-3 2.5 -6 .5z" fill="#3f8f3a"/></svg>';
+
+    const TAB_ICONS = {
+      pizza: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L21 19 Q12 23 3 19 Z"/><circle cx="11.5" cy="12" r="1.3" fill="currentColor"/><circle cx="9" cy="17" r="1.3" fill="currentColor"/><circle cx="14.5" cy="17" r="1.3" fill="currentColor"/></svg>',
+      voter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>',
+      classement: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 20h8"/></svg>',
+      jeux: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12a4 4 0 0 1 4 4v2a3 3 0 0 1-5.4 1.8L15 14H9l-1.6 1.8A3 3 0 0 1 2 14v-2a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16" cy="11.5" r=".8" fill="currentColor"/><circle cx="18" cy="13.5" r=".8" fill="currentColor"/></svg>'
+    };
+
+    // Toppings drawn on a 200×200 pizza, one group per ingredient so the game can show them one by one.
+    function at(x, y, r) {
+      return 'transform="translate(' + x + ' ' + y + ')' + (r ? ' rotate(' + r + ')' : '') + '"';
+    }
+    const LAYER_ART = {
+      sauce: '<circle cx="100" cy="100" r="76" fill="url(#pps-sauce)"/><circle cx="76" cy="132" r="9" fill="#a92415" opacity=".4"/><circle cx="130" cy="72" r="7" fill="#a92415" opacity=".4"/>',
+      mozza: [[74, 70, 15, 11, 20], [120, 66, 14, 10, -10], [146, 102, 13, 11, 30], [100, 100, 16, 12, 0], [66, 118, 14, 10, -25],
+        [112, 138, 15, 11, 15], [80, 150, 11, 8, 40], [142, 138, 11, 9, -15], [56, 90, 10, 8, 10], [128, 88, 9, 7, 0]]
+        .map(([x, y, rx, ry, r]) => '<ellipse cx="' + x + '" cy="' + y + '" rx="' + rx + '" ry="' + ry + '" transform="rotate(' + r + ' ' + x + ' ' + y + ')" fill="#fff3d6" stroke="#efd29a" stroke-width="1.5"/>').join(''),
+      jambon: [[82, 58, -15], [134, 80, 25], [60, 104, 40], [108, 120, -30], [146, 124, 10], [86, 142, 20]]
+        .map(([x, y, r]) => '<g ' + at(x, y, r) + '><rect x="-13" y="-8" width="26" height="16" rx="6" fill="#f3a2a6" stroke="#fbd9d6" stroke-width="2.5"/><path d="M-7 -1 q6 -4 12 1" stroke="#de7c86" stroke-width="1.6" fill="none"/></g>').join(''),
+      champi: [[104, 60, 10], [66, 80, -20], [142, 108, 30], [96, 124, -10], [124, 150, 15], [60, 134, 45]]
+        .map(([x, y, r]) => '<g ' + at(x, y, r) + '><path d="M-11 1 Q-11 -10 0 -10 Q11 -10 11 1 Z" fill="#e8d5b5" stroke="#8d6a4a" stroke-width="1.6"/><path d="M-3.5 1 L-3 9 L3 9 L3.5 1" fill="#f3e6cf" stroke="#8d6a4a" stroke-width="1.6"/></g>').join(''),
+      olives: [[88, 84], [126, 56], [152, 118], [74, 108], [114, 106], [98, 156], [56, 140], [136, 142]]
+        .map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r="5.5" fill="none" stroke="#231d1e" stroke-width="4"/>').join(''),
+      chorizo: [[116, 84], [78, 124], [134, 126], [62, 86], [100, 160], [148, 72]]
+        .map(([x, y]) => '<g ' + at(x, y) + '><circle r="10" fill="#b3271d" stroke="#8a1b14" stroke-width="1.5"/><circle cx="-3" cy="-3" r="1.8" fill="#ec7d5f"/><circle cx="3" cy="2" r="1.6" fill="#ec7d5f"/><circle cx="-1" cy="5" r="1.2" fill="#ec7d5f"/></g>').join(''),
+      poivrons: [[90, 70, 20, '#3fa046'], [140, 92, -30, '#f0c22d'], [70, 142, 60, '#3fa046'], [118, 150, -10, '#e4472d'], [52, 104, 100, '#f0c22d'], [108, 102, 45, '#3fa046']]
+        .map(([x, y, r, c]) => '<g ' + at(x, y, r) + '><path d="M-11 3 Q0 -9 11 3" fill="none" stroke="' + c + '" stroke-width="5" stroke-linecap="round"/></g>').join(''),
+      basilic: [[100, 44, 0], [152, 88, 60], [68, 62, -40], [120, 122, 20], [52, 118, -70], [92, 140, 10]]
+        .map(([x, y, r]) => '<g ' + at(x, y, r) + '><path d="M0 -12 C8 -6 8 6 0 12 C-8 6 -8 -6 0 -12 Z" fill="#3d8b3a"/><path d="M0 -10 L0 10" stroke="#2a6527" stroke-width="1.4"/></g>').join('')
+    };
+    const LAYERS = ['sauce', 'mozza', 'jambon', 'champi', 'olives', 'chorizo', 'poivrons', 'basilic'];
+
+    const CRUST_SPOTS = [0, 38, 81, 119, 158, 203, 241, 284, 322].map((deg, i) => {
+      const a = deg * Math.PI / 180;
+      const r = 86 + (i % 3);
+      return '<circle cx="' + (100 + r * Math.cos(a)).toFixed(1) + '" cy="' + (100 + r * Math.sin(a)).toFixed(1) + '" r="' + (2 + i % 2) + '" fill="#7a4119" opacity=".45"/>';
+    }).join('');
+
+    function pizzaInner(layers, hidden) {
+      return '<circle cx="100" cy="100" r="94" fill="url(#pps-crust)"/>' + CRUST_SPOTS +
+        '<circle cx="100" cy="100" r="79" fill="#f5deb0"/>' +
+        layers.map(k => '<g class="layer' + (hidden ? '' : ' on') + '" data-layer="' + k + '">' + LAYER_ART[k] + '</g>').join('');
+    }
+
+    const PIZZA_DEFS = '<defs><radialGradient id="pps-crust" cx="50%" cy="46%" r="52%"><stop offset="80%" stop-color="#f0c27e"/><stop offset="93%" stop-color="#d48a3c"/><stop offset="100%" stop-color="#9c5a22"/></radialGradient>' +
+      '<radialGradient id="pps-sauce" cx="45%" cy="40%" r="60%"><stop offset="0%" stop-color="#e2533a"/><stop offset="100%" stop-color="#b02817"/></radialGradient></defs>';
+
+    // A whole pizza. With `hidden`, every topping starts off and the game turns them on.
+    function pizzaMarkup(layers, hidden) {
+      return '<svg viewBox="0 0 200 200" class="pizza-art">' + PIZZA_DEFS + pizzaInner(layers, hidden) + '</svg>';
+    }
+    // Pizzas without a photo get one of these, always the same one for a given pizza.
+    const PIZZA_VARIANTS = [
+      ['sauce', 'mozza', 'chorizo', 'olives', 'basilic'],
+      ['sauce', 'mozza', 'jambon', 'champi'],
+      ['sauce', 'mozza', 'champi', 'poivrons', 'olives'],
+      ['sauce', 'mozza', 'basilic'],
+      ['mozza', 'jambon', 'champi', 'olives', 'basilic']
+    ].map(layers => pizzaMarkup(layers));
+    const PIZZA_DEFAULT = PIZZA_VARIANTS[0];
+
+    function pizzaVariant(id) {
+      let hash = 0;
+      for (const c of String(id)) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
+      return PIZZA_VARIANTS[hash % PIZZA_VARIANTS.length];
+    }
+    const PIZZA_HERO = pizzaMarkup(['sauce', 'mozza', 'champi', 'olives', 'poivrons', 'basilic']);
+
+    const INGREDIENT_ICONS = {
+      sauce: '<circle cx="32" cy="38" r="20" fill="#e4472d"/><ellipse cx="24" cy="31" rx="6" ry="4" fill="#fff" opacity=".3"/><path d="M32 18 L26 11 L33 14.5 L36 8 L37.5 15.5 L45 14.5 L39 19.5 Z" fill="#4c9a3f"/>',
+      mozza: '<circle cx="24" cy="38" r="14" fill="#fff6e3" stroke="#e7cf9f" stroke-width="2"/><circle cx="42" cy="28" r="12" fill="#fffaf0" stroke="#e7cf9f" stroke-width="2"/><ellipse cx="20" cy="33" rx="4" ry="2.5" fill="#fff"/><ellipse cx="39" cy="24" rx="3.5" ry="2" fill="#fff"/>',
+      jambon: '<path d="M10 34 Q12 16 34 15 Q56 16 54 34 Q52 50 32 51 Q12 50 10 34 Z" fill="#f6b2b5" stroke="#fde7e3" stroke-width="4"/><path d="M20 30 Q28 26 34 32 M30 40 Q38 36 44 40" stroke="#e48690" stroke-width="2" fill="none" stroke-linecap="round"/>',
+      champi: '<path d="M24 36 L23 52 Q32 56 41 52 L40 36 Z" fill="#f2e4c9"/><path d="M10 32 Q10 12 32 12 Q54 12 54 32 Q54 36 50 36 L14 36 Q10 36 10 32 Z" fill="#b8865a"/><ellipse cx="24" cy="22" rx="4" ry="2.5" fill="#d9ad80"/><circle cx="39" cy="20" r="2.5" fill="#d9ad80"/>',
+      olives: '<ellipse cx="22" cy="37" rx="11" ry="13" fill="#4a3f44" stroke="#8a7a80" stroke-width="1.5"/><circle cx="22" cy="37" r="4" fill="#1e191b"/><ellipse cx="42" cy="29" rx="11" ry="13" fill="#7a9a32"/><circle cx="42" cy="29" r="4" fill="#d9573c"/><ellipse cx="18" cy="31" rx="2.5" ry="4" fill="#fff" opacity=".25"/><ellipse cx="38" cy="23" rx="2.5" ry="4" fill="#fff" opacity=".3"/>',
+      chorizo: '<circle cx="24" cy="37" r="15" fill="#b3271d" stroke="#7d160f" stroke-width="2"/><circle cx="20" cy="33" r="2.2" fill="#f08a6a"/><circle cx="28" cy="41" r="2" fill="#f08a6a"/><circle cx="26" cy="31" r="1.6" fill="#f3b08e"/><circle cx="43" cy="26" r="12" fill="#c63322" stroke="#7d160f" stroke-width="2"/><circle cx="40" cy="24" r="1.8" fill="#f08a6a"/><circle cx="46" cy="29" r="2" fill="#f08a6a"/>',
+      poivrons: '<path d="M32 24 Q32 14 38 10" stroke="#2c6b28" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M18 26 Q14 52 26 54 Q32 56 32 50 Q32 56 38 54 Q50 52 46 26 Q40 20 32 24 Q24 20 18 26 Z" fill="#3fa046"/><path d="M24 30 Q22 42 26 48" stroke="#8fdc8a" stroke-width="3" fill="none" opacity=".6" stroke-linecap="round"/>',
+      basilic: '<path d="M30 54 Q8 44 14 18 Q36 22 30 54 Z" fill="#3f8f3a"/><path d="M30 52 Q20 38 16 21" stroke="#2a6527" stroke-width="2" fill="none"/><path d="M34 54 Q56 46 52 14 Q30 20 34 54 Z" fill="#56a84a"/><path d="M34 52 Q44 36 50 17" stroke="#2f7a2c" stroke-width="2" fill="none"/>'
+    };
+
+    function iconMarkup(key) {
+      return '<svg viewBox="0 0 64 64" class="icon">' + INGREDIENT_ICONS[key] + '</svg>';
+    }
+
+    // Customers of the mini-game, drawn from a few traits.
+    const AVATARS = {
+      Luigi: { bg: '#2f6b3a', skin: '#f1c49c', hair: '#2a1a12', style: 'short', mustache: true },
+      Giulia: { bg: '#8a2b3a', skin: '#e9b38b', hair: '#6b2e14', style: 'long' },
+      Marco: { bg: '#2b4a7a', skin: '#c68b5e', hair: '#17110d', style: 'short', beard: true },
+      Sofia: { bg: '#6d4690', skin: '#f3d2b3', hair: '#e2a83c', style: 'bob' },
+      Pattin: { bg: '#b8341f', skin: '#f0c39b', hair: '#3a2416', style: 'chef', mustache: true },
+      Nonna: { bg: '#6b5a2e', skin: '#f2cfae', hair: '#d9d4cc', style: 'bun', glasses: true }
+    };
+
+    function avatarMarkup(name) {
+      const a = AVATARS[name];
+      const hair = {
+        long: '<path d="M20 40 Q16 16 40 15 Q64 16 60 40 L63 70 L17 70 Z" fill="' + a.hair + '"/>',
+        bob: '<path d="M18 44 Q15 15 40 15 Q65 15 62 44 Q61 52 55 52 L25 52 Q19 52 18 44 Z" fill="' + a.hair + '"/>'
+      };
+      const top = {
+        short: '<path d="M25 33 Q24 17 40 17 Q56 17 55 33 Q50 24 40 24 Q30 24 25 33 Z" fill="' + a.hair + '"/>',
+        long: '<path d="M25 33 Q26 18 40 18 Q54 18 55 33 Q48 25 36 26 Q30 27 25 33 Z" fill="' + a.hair + '"/>',
+        bob: '<path d="M25 34 Q25 18 40 18 Q55 18 55 34 Q46 24 34 27 Q29 29 25 34 Z" fill="' + a.hair + '"/>',
+        bun: '<circle cx="40" cy="15" r="7" fill="' + a.hair + '"/><path d="M25 33 Q25 19 40 19 Q55 19 55 33 Q50 25 40 25 Q30 25 25 33 Z" fill="' + a.hair + '"/>',
+        chef: '<path d="M26 27 L54 27 L54 19 Q61 13 55 7 Q51 1 45 5 Q40 -1 35 5 Q29 1 25 7 Q19 13 26 19 Z" fill="#fff"/><rect x="26" y="22" width="28" height="6" rx="1" fill="#efe6d8"/>'
+      };
+      return '<svg viewBox="0 0 80 80" class="avatar"><defs><clipPath id="pps-av"><circle cx="40" cy="40" r="40"/></clipPath></defs>' +
+        '<g clip-path="url(#pps-av)"><circle cx="40" cy="40" r="40" fill="' + a.bg + '"/>' + (hair[a.style] || '') +
+        '<path d="M10 74 Q13 56 40 56 Q67 56 70 74 L70 80 L10 80 Z" fill="#f7ecdc"/>' +
+        '<rect x="35" y="46" width="10" height="11" fill="' + a.skin + '"/>' +
+        '<circle cx="26" cy="38" r="3.5" fill="' + a.skin + '"/><circle cx="54" cy="38" r="3.5" fill="' + a.skin + '"/>' +
+        '<ellipse cx="40" cy="37" rx="14" ry="16" fill="' + a.skin + '"/>' + top[a.style] +
+        (a.beard ? '<path d="M27 39 Q27 55 40 55 Q53 55 53 39 Q50 48 40 48 Q30 48 27 39 Z" fill="' + a.hair + '"/>' : '') +
+        '<circle cx="34.5" cy="37" r="1.8" fill="#2a1a12"/><circle cx="45.5" cy="37" r="1.8" fill="#2a1a12"/>' +
+        '<circle cx="31" cy="43" r="3" fill="#e88a7a" opacity=".35"/><circle cx="49" cy="43" r="3" fill="#e88a7a" opacity=".35"/>' +
+        '<path d="M35.5 45.5 Q40 49 44.5 45.5" stroke="#7a3a2a" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
+        (a.mustache ? '<path d="M32 43 Q36 40 40 42 Q44 40 48 43 Q44 46 40 44 Q36 46 32 43 Z" fill="' + a.hair + '"/>' : '') +
+        (a.glasses ? '<circle cx="34.5" cy="37" r="5" fill="none" stroke="#3a2a1e" stroke-width="1.6"/><circle cx="45.5" cy="37" r="5" fill="none" stroke="#3a2a1e" stroke-width="1.6"/><path d="M39.5 37 L40.5 37" stroke="#3a2a1e" stroke-width="1.6"/>' : '') +
+        '</g></svg>';
+    }
+
+    const OVEN = '<svg viewBox="0 0 360 240" class="oven-art"><defs>' +
+      '<linearGradient id="pps-brick" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8643a"/><stop offset="1" stop-color="#6e2a16"/></linearGradient>' +
+      '<radialGradient id="pps-fire" cx="50%" cy="88%" r="75%"><stop offset="0" stop-color="#ffd27a"/><stop offset=".45" stop-color="#f0702e"/><stop offset="1" stop-color="#1a0b06"/></radialGradient>' +
+      PIZZA_DEFS.slice('<defs>'.length, -'</defs>'.length) + '</defs>' +
+      '<ellipse cx="180" cy="226" rx="168" ry="12" fill="#000" opacity=".45"/>' +
+      '<circle class="puff" cx="180" cy="22" r="9" fill="#f8ecdc" opacity=".25"/><circle class="puff p2" cx="188" cy="16" r="7" fill="#f8ecdc" opacity=".2"/><circle class="puff p3" cx="174" cy="12" r="6" fill="#f8ecdc" opacity=".2"/>' +
+      '<rect x="162" y="26" width="36" height="40" rx="4" fill="#5a2414"/>' +
+      '<path d="M30 204 Q30 52 180 52 Q330 52 330 204 Z" fill="url(#pps-brick)"/>' +
+      '<path d="M62 204 Q62 84 180 84 Q298 84 298 204" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="2"/>' +
+      '<path d="M46 150 L80 150 M70 118 L104 118 M256 118 L290 118 M280 150 L314 150 M120 72 L150 72 M210 72 L240 72" stroke="#000" stroke-opacity=".16" stroke-width="2"/>' +
+      '<path d="M104 204 Q104 112 180 112 Q256 112 256 204 Z" fill="url(#pps-fire)"/>' +
+      '<path d="M96 204 Q96 104 180 104 Q264 104 264 204" fill="none" stroke="#eab968" stroke-opacity=".4" stroke-width="6"/>' +
+      '<path class="flame" d="M140 204 Q132 182 146 164 Q146 180 156 184 Q154 168 168 154 Q166 176 178 186 Q182 172 194 164 Q192 182 204 188 Q210 176 218 172 Q216 190 222 204 Z" fill="#ff9a3c"/>' +
+      '<path class="flame f2" d="M154 204 Q149 190 160 180 Q162 190 170 192 Q170 180 180 172 Q182 186 192 194 Q196 186 202 184 Q202 196 206 204 Z" fill="#ffe08a"/>' +
+      '<rect x="146" y="196" width="40" height="8" rx="4" fill="#4a2a18" transform="rotate(-8 166 200)"/><rect x="172" y="196" width="40" height="8" rx="4" fill="#5c3520" transform="rotate(7 192 200)"/>' +
+      '<rect x="20" y="202" width="320" height="16" rx="6" fill="#3b2a1f"/>' +
+      '<rect x="236" y="196" width="118" height="7" rx="3.5" fill="#b8874f"/><ellipse cx="292" cy="196" rx="44" ry="7" fill="#c99a62"/>' +
+      '<g transform="translate(262 158) scale(.3)">' + pizzaInner(['sauce', 'mozza', 'chorizo', 'basilic']) + '</g>' +
+      '</svg>';
+
+    const TROPHY = '<svg viewBox="0 0 120 120" class="trophy"><defs><linearGradient id="pps-gold" x1="0" x2="1"><stop offset="0" stop-color="#f7d58e"/><stop offset=".5" stop-color="#e2a948"/><stop offset="1" stop-color="#b47a26"/></linearGradient></defs>' +
+      '<path d="M34 26 H22 Q16 26 17 33 Q19 50 39 56" fill="none" stroke="#d8a04a" stroke-width="6" stroke-linecap="round"/><path d="M86 26 H98 Q104 26 103 33 Q101 50 81 56" fill="none" stroke="#d8a04a" stroke-width="6" stroke-linecap="round"/>' +
+      '<path d="M34 16 H86 V44 Q86 70 60 74 Q34 70 34 44 Z" fill="url(#pps-gold)"/><rect x="54" y="72" width="12" height="16" fill="#c98e36"/>' +
+      '<rect x="40" y="88" width="40" height="10" rx="3" fill="url(#pps-gold)"/><rect x="34" y="98" width="52" height="11" rx="3" fill="#6e4318"/>' +
+      '<path d="M60 26 l4.7 9.5 10.5 1.5-7.6 7.4 1.8 10.4L60 49.9l-9.4 4.9 1.8-10.4-7.6-7.4 10.5-1.5z" fill="#fff6dc"/></svg>';
+
+    // The secret ingredient of the mini-game, and the two gentlemen who come by when it's used.
+    const PINEAPPLE = '<svg viewBox="0 0 64 64" class="icon"><defs><clipPath id="pps-ana"><ellipse cx="32" cy="40" rx="15" ry="20"/></clipPath></defs>' +
+      '<path d="M32 23 L23 6 L30.5 14 L32 2 L35 14 L43 6 L36 23 Z" fill="#3f9a3a"/><path d="M32 23 L27 12 L32 16 L37 12 Z" fill="#5cb84f"/>' +
+      '<ellipse cx="32" cy="40" rx="15" ry="20" fill="#f2b632"/>' +
+      '<g clip-path="url(#pps-ana)" stroke="#c98a1e" stroke-width="2"><path d="M8 26 L56 74 M8 38 L44 74 M14 16 L60 62 M56 26 L8 74 M56 38 L20 74 M50 16 L4 62"/></g>' +
+      '<ellipse cx="26" cy="32" rx="3" ry="6" fill="#fff" opacity=".3"/></svg>';
+
+    function mafiosoMarkup(m) {
+      return '<svg viewBox="0 0 160 220" class="mafioso-art">' +
+        '<path d="M16 220 Q20 148 80 144 Q140 148 144 220 Z" fill="#1c1c22"/>' +
+        '<path d="M38 162 L34 220 M56 152 L54 220 M104 152 L106 220 M122 162 L126 220" stroke="#fff" stroke-opacity=".09" stroke-width="2"/>' +
+        '<path d="M63 146 L80 188 L97 146 Z" fill="#f2efe8"/><path d="M76 154 L84 154 L87 198 L80 206 L73 198 Z" fill="' + m.tie + '"/>' +
+        '<path d="M63 146 L80 188 L56 170 Z" fill="#111116"/><path d="M97 146 L80 188 L104 170 Z" fill="#111116"/>' +
+        '<path d="M110 168 L124 166 L122 174 Z" fill="' + m.band + '"/>' +
+        '<rect x="70" y="118" width="20" height="30" fill="' + m.skin + '"/>' +
+        '<ellipse cx="48" cy="98" rx="5" ry="8" fill="' + m.skin + '"/><ellipse cx="112" cy="98" rx="5" ry="8" fill="' + m.skin + '"/>' +
+        '<ellipse cx="80" cy="96" rx="32" ry="36" fill="' + m.skin + '"/>' +
+        '<path d="M50 104 Q52 132 80 134 Q108 132 110 104 Q100 122 80 122 Q60 122 50 104 Z" fill="#000" opacity=".13"/>' +
+        '<path d="M53 81 L74 86 M107 81 L86 86" stroke="#2a1a12" stroke-width="3.5" stroke-linecap="round"/>' +
+        '<rect x="53" y="86" width="23" height="13" rx="5" fill="#0b0b0e"/><rect x="84" y="86" width="23" height="13" rx="5" fill="#0b0b0e"/>' +
+        '<path d="M76 91 L84 91" stroke="#0b0b0e" stroke-width="3"/><path d="M57 89 L63 89 M88 89 L94 89" stroke="#fff" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>' +
+        (m.mustache ? '<path d="M63 112 Q72 105 80 109 Q88 105 97 112 Q88 117 80 113 Q72 117 63 112 Z" fill="#1d130d"/>' : '') +
+        '<path d="M70 121 Q80 117 90 121" stroke="#5a2a1a" stroke-width="2.5" fill="none" stroke-linecap="round"/>' +
+        (m.toothpick ? '<path d="M88 120 L106 126" stroke="#e8c88a" stroke-width="2.2" stroke-linecap="round"/>' : '') +
+        (m.scar ? '<path d="M97 101 L104 116 M98 106 L103 104 M100 111 L105 109" stroke="#b86a5a" stroke-width="1.8" stroke-linecap="round"/>' : '') +
+        '<ellipse cx="80" cy="66" rx="50" ry="9" fill="#141418"/><path d="M50 66 Q50 34 80 32 Q110 34 110 66 Z" fill="#1d1d24"/>' +
+        '<path d="M66 38 Q80 46 94 38" stroke="#000" stroke-opacity=".45" stroke-width="2" fill="none"/>' +
+        '<path d="M50 56 Q80 61 110 56 L110 65 Q80 70 50 65 Z" fill="' + m.band + '"/></svg>';
+    }
+    const MAFIOSI = [
+      { name: 'Don Peperoni', line: 'Psst… De l\'ananas ? Sur une pizza ?', skin: '#e8b48c', band: '#8b1a1a', tie: '#b3271d', mustache: true },
+      { name: 'Tonio « Le Parmesan »', line: 'Tu vas avoir des problèmes. Capisce ?', skin: '#d39a6e', band: '#c8a24a', tie: '#e8e2d4', toothpick: true, scar: true }
+    ];
+
+    // ---- Humour: the pizzaiolo's jokes and a few quips around the app. ----
+
+    const JOKES = [
+      'Que dit un Italien quand il rate sa pizza ? « Mamma mia, c\'est la pâte-astrophe ! »',
+      'Pourquoi la tour de Pise penche ? Elle essaie de voir ce qui cuit dans le four.',
+      'Pourquoi le champignon est invité à toutes les soirées ? Parce que c\'est un fun-gi.',
+      'Le basilic a fait un régime. Maintenant, on l\'appelle le basi-light.',
+      'Quel est le comble pour un pizzaiolo ? Se faire rouler dans la farine.',
+      'Quel est le comble pour une pizza ? Perdre la boule… de mozzarella.',
+      'Le jambon a demandé l\'ananas en mariage. La famille a refusé. Tout le monde sait pourquoi.',
+      'Pourquoi les Vénitiens ne livrent pas en scooter ? En gondole, la pizza arrive froide… mais tellement romantique.',
+      'Mon médecin m\'a dit de manger plus de légumes. J\'ai pris une végétarienne. Taille XXL.',
+      'Que fait une olive au chômage ? Elle cherche un poste avec un noyau dur.',
+      'Quel est le sport national des pizzaiolos ? Le lancer de pâte, catégorie poids plume.',
+      'Comment les Romains commandaient une pizza ? « Une Regina, et vite, on a un empire à gérer. »',
+      'La pizza, c\'est comme l\'amour : même un peu brûlée, on en reprend une part.',
+      'Pourquoi la mozzarella ne s\'énerve jamais ? Elle reste toujours fondue de tout le monde.',
+      'Un pizzaiolo ne vieillit pas. Il prend juste de la bouteille… d\'huile d\'olive.',
+      'Quelle est la pizza préférée des fantômes ? La Margher-hiii-ta.',
+      'À Naples, quand tu dis « pizza à l\'ananas », même le Vésuve se réveille.',
+      'Pourquoi le chorizo est toujours invité à la fête ? Parce qu\'il met le feu.'
+    ];
+    // A random joke at each visit; « Une autre ! » moves to the next one.
+    let jokeIndex = Math.floor(Math.random() * JOKES.length);
+
+    // What the voter hears for the score they picked, before confirming.
+    function scoreReaction(n) {
+      if (n <= 3) return 'Aïe… la pizza pleure dans son four.';
+      if (n <= 5) return 'Mouais. Comme une pizza surgelée un dimanche soir.';
+      if (n <= 7) return 'Pas mal ! Ça sent bon l\'Italie.';
+      if (n <= 9) return 'Mamma mia, che buona !';
+      return 'Bellissima ! Le chef pleure de joie.';
+    }
+
+    // Titles of the first three in the ranking, and the last one's consolation.
+    const RANK_TITLES = ['Il Capo', 'Il Consigliere', 'Il Picciotto'];
+    const LAST_TITLE = 'Prix de la persévérance';
+
+    const SERVE_CHEERS = ['Servie !', 'Perfetto !', 'Bellissima !', 'Delizioso !', 'Bravo !', 'Che buona !'];
+
+    function endVerdict(served) {
+      if (served === 0) return 'Le four était allumé, au moins ?';
+      if (served <= 3) return 'Apprenti pizzaiolo. La Nonna est déçue, mais elle t\'aime quand même.';
+      if (served <= 6) return 'Pas mal ! Tu as la main à la pâte.';
+      if (served <= 9) return 'Pizzaiolo confirmé : Naples t\'envoie ses salutations.';
+      return 'Leggenda ! Désormais, on t\'appelle Il Maestro.';
+    }
+
+    // ---- Rendering: DOM built with textContent only; illustrations come from the constants above. ----
+
+    function el(tag, props, children) {
+      const node = document.createElement(tag);
+      Object.entries(props || {}).forEach(([key, value]) => {
+        if (key === 'text') node.textContent = value;
+        else if (key === 'class') node.className = value;
+        else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+        else if (key in node && typeof value === 'boolean') node[key] = value;
+        else node.setAttribute(key, value);
+      });
+      (children || []).forEach(child => child && node.appendChild(child));
+      return node;
+    }
+
+    // A decorative illustration from one of the static markup constants.
+    function art(markup) {
+      const template = document.createElement('template');
+      template.innerHTML = markup;
+      const node = template.content.firstElementChild;
+      node.setAttribute('aria-hidden', 'true');
+      node.setAttribute('focusable', 'false');
+      return node;
+    }
+
+    const app = document.getElementById('app');
+
+    function pizzaThumb(pizza) {
+      return isPhoto(pizza.photo)
+        ? el('img', { class: 'thumb', src: pizza.photo, alt: 'Photo de ' + pizza.name })
+        : el('div', { class: 'thumb thumb-art' }, [art(pizzaVariant(pizza.id))]);
+    }
+
+    function pizzaMedia(pizza) {
+      return el('div', { class: 'media' }, [
+        isPhoto(pizza.photo) ? el('img', { src: pizza.photo, alt: 'Photo de ' + pizza.name }) : art(pizzaVariant(pizza.id))
+      ]);
+    }
+
+    function brand() {
+      const wordmark = el('h1', { class: 'wordmark' }, [
+        document.createTextNode('Pattin'),
+        el('em', { text: 'Pizza' }),
+        document.createTextNode('Show')
+      ]);
+      wordmark.setAttribute('aria-label', 'PattinPizzaShow');
+      wordmark.appendChild(el('small', { text: 'Concours entre amis', 'aria-hidden': 'true' }));
+      return el('div', { class: 'brand' }, [art(LOGO), wordmark]);
+    }
+
+    function topbar(children) {
+      return el('header', { class: 'topbar' }, [el('div', { class: 'topbar-inner' }, children)]);
+    }
+
+    // A heading whose middle part is set in gold italics: [before, highlighted, after].
+    function title(parts) {
+      return el('h2', { class: 'title' }, [
+        document.createTextNode(parts[0]),
+        el('em', { text: parts[1] }),
+        document.createTextNode(parts[2])
+      ]);
+    }
+
+    function emptyState(text) {
+      return el('div', { class: 'card empty-state' }, [art(PIZZA_DEFAULT), el('p', { class: 'empty', text })]);
+    }
+
+    function render() {
+      const me = currentParticipant();
+      if (me) renderMain(me);
+      else renderPseudo();
+    }
+
+    function renderPseudo() {
+      const input = el('input', { type: 'text', id: 'pseudo', name: 'pseudo', maxlength: '20', autocomplete: 'off', placeholder: 'Ex. : Mozzarella Queen' });
+      const error = el('p', { class: 'error', id: 'pseudo-error', role: 'alert' });
+      const submit = el('button', { type: 'submit', class: 'btn-primary', text: 'C\'est parti' });
+      const form = el('form', { class: 'card', novalidate: '' }, [
+        el('label', { for: 'pseudo', text: 'Ton pseudo' }),
+        input,
+        error,
+        submit
+      ]);
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        submit.disabled = true;
+        const result = await createParticipant(input.value);
+        submit.disabled = false;
+        if (result.error) {
+          error.textContent = result.error;
+          input.focus();
+        } else {
+          currentTab = 'voter';
+          render();
+        }
+      });
+      const floats = ['sauce', 'basilic', 'mozza', 'champi'].map((key, i) =>
+        el('div', { class: 'float f' + (i + 1) }, [art(iconMarkup(key))]));
+      app.replaceChildren(
+        topbar([brand()]),
+        el('main', { class: 'page' }, [
+          el('section', { class: 'hero' }, [
+            el('div', {}, [
+              el('p', { class: 'eyebrow', text: 'Concours de pizzas entre amis' }),
+              el('h2', {}, [document.createTextNode('Qui fera la '), el('em', { text: 'meilleure' }), document.createTextNode(' pizza ?')]),
+              el('p', { class: 'lead', text: 'Présente ta pizza, note celles des autres de 1 à 10 et suis le classement en direct. Ananas strictement interdit.' }),
+              form
+            ]),
+            el('div', { class: 'hero-art' }, [el('div', { class: 'glow' }), art(PIZZA_HERO)].concat(floats))
+          ])
+        ])
+      );
+      input.focus();
+    }
+
+    const TABS = [['pizza', 'Ma pizza'], ['voter', 'Voter'], ['classement', 'Classement'], ['jeux', 'Jeux']];
+    // Per tab: eyebrow, title parts and the line under it.
+    const SECTIONS = {
+      pizza: ['Ta création', ['Ma ', 'pizza', ''], 'Un nom, une photo si tu veux, et ta pizza entre en compétition. Pas d\'ananas : on te surveille.'],
+      voter: ['Dégustation', ['Note les ', 'pizzas', ''], 'Une note de 1 à 10 pour chaque pizza des autres. Sois juste, la Nonna regarde.'],
+      classement: ['En direct', ['Le ', 'classement', ''], 'La moyenne des notes, mise à jour à chaque vote. Que la meilleure pâte gagne.'],
+      jeux: ['Salle de jeux', ['Les ', 'mini-jeux', ''], 'Pour patienter entre deux dégustations. Sans effet sur le concours, ni sur ta digestion.']
+    };
+
+    function renderMain(me) {
+      const nav = el('nav', { class: 'tabs', role: 'tablist', 'aria-label': 'Sections' },
+        TABS.map(([key, label]) => el('button', {
+          type: 'button',
+          role: 'tab',
+          'aria-selected': String(key === currentTab),
+          onclick: () => {
+            if (key === currentTab && round) return;
+            cancelRound();
+            gameEnd = null;
+            pizzaDraft = null;
+            currentTab = key;
+            render();
+          }
+        }, [art(TAB_ICONS[key]), document.createTextNode(label)]))
+      );
+      const panel = el('section', { role: 'tabpanel', 'aria-label': TABS.find(t => t[0] === currentTab)[1] });
+      if (currentTab === 'pizza') renderMyPizza(panel, me);
+      else if (currentTab === 'voter') renderVoter(panel, me);
+      else if (currentTab === 'classement') renderRanking(panel, me);
+      else renderGames(panel);
+
+      const [eyebrow, titleParts, lead] = SECTIONS[currentTab];
+      // On a phone a running round hides the bottom tab bar, so a stray tap can't end it.
+      app.classList.toggle('playing', Boolean(round));
+      app.replaceChildren(
+        topbar([
+          brand(),
+          nav,
+          el('p', { class: 'user-chip' }, [
+            el('span', { class: 'initial', text: me.pseudo.charAt(0).toUpperCase(), 'aria-hidden': 'true' }),
+            el('span', { class: 'name', text: 'Salut, ' + me.pseudo })
+          ])
+        ]),
+        el('main', { class: 'page' }, [
+          // A running round takes the whole page, so the heading and the joke step aside.
+          round ? null : el('div', { class: 'section-head' }, [
+            el('p', { class: 'eyebrow', text: eyebrow }),
+            title(titleParts),
+            el('p', { class: 'lead', text: lead })
+          ]),
+          round ? null : jokeStrip(),
+          panel
+        ])
+      );
+      if (mafia) app.appendChild(mafiaScene());
+      if (mafia) app.querySelector('.mafia button').focus();
+    }
+
+    function jokeStrip() {
+      const text = el('p', { class: 'joke-text', 'aria-live': 'polite', text: JOKES[jokeIndex] });
+      return el('div', { class: 'joke' }, [
+        el('div', { class: 'joke-chef' }, [art(avatarMarkup('Pattin'))]),
+        el('div', { class: 'joke-body' }, [el('p', { class: 'joke-label', text: 'La blague du pizzaiolo' }), text]),
+        el('button', {
+          type: 'button',
+          class: 'btn-secondary joke-next',
+          text: 'Une autre !',
+          onclick: () => {
+            jokeIndex = (jokeIndex + 1) % JOKES.length;
+            text.textContent = JOKES[jokeIndex];
+          }
+        })
+      ]);
+    }
+
+    // The screen goes black and the Famiglia has a word about the pineapple.
+    function mafiaScene() {
+      return el('div', { class: 'mafia', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'mafia-title' }, [
+        el('div', { class: 'mafia-inner' }, [
+          el('h2', { class: 'visually-hidden', id: 'mafia-title', text: 'La Famiglia n\'aime pas l\'ananas' }),
+          el('div', { class: 'mafiosi' }, MAFIOSI.map((m, i) => el('div', { class: 'mafioso m' + (i + 1) }, [
+            el('p', { class: 'speech' }, [el('strong', { text: m.name }), el('span', { text: m.line })]),
+            art(mafiosoMarkup(m))
+          ]))),
+          el('p', { class: 'mafia-caption', text: 'Ta partie a mystérieusement disparu. Aucun témoin, aucun score.' }),
+          el('button', { type: 'button', class: 'btn-primary mafia-close', text: 'Pardon, Don. Je ne le ferai plus.', onclick: leaveTheFamily })
+        ])
+      ]);
+    }
+
+    function callTheFamily() {
+      cancelRound();
+      gameEnd = null;
+      mafia = true;
+      render();
+    }
+
+    function leaveTheFamily() {
+      mafia = false;
+      render();
+      const play = Array.from(app.querySelectorAll('button')).find(b => b.textContent === 'Jouer');
+      if (play) play.focus();
+    }
+
+    document.addEventListener('keydown', event => {
+      if (mafia && event.key === 'Escape') leaveTheFamily();
+    });
+
+    function renderMyPizza(panel, me) {
+      const mine = state.pizzas.find(z => z.participant_id === me.id);
+      if (pizzaDraft && pizzaDraft.editing !== Boolean(mine)) pizzaDraft = null;
+      if (mine && !pizzaDraft) {
+        const { count, avg } = pizzaStats(mine.id);
+        const body = el('div', { class: 'body' }, [
+          el('p', { class: 'eyebrow', text: 'Ta pizza' }),
+          el('p', { class: 'pizza-name', text: mine.name })
+        ]);
+        if (count) {
+          body.appendChild(el('p', { class: 'big-score', text: formatAvg(avg) }));
+          body.appendChild(el('p', { class: 'stat muted', text: formatCount(count) }));
+          body.appendChild(votesList(mine.id));
+        } else {
+          body.appendChild(el('p', { class: 'stat muted', text: 'Pas encore de note' }));
+        }
+        body.appendChild(el('button', {
+          type: 'button',
+          class: 'btn-secondary edit-pizza',
+          text: 'Modifier le nom ou la photo',
+          onclick: () => {
+            pizzaDraft = { editing: true, name: mine.name, photo: isPhoto(mine.photo) ? mine.photo : '' };
+            render();
+            const input = app.querySelector('#pizza-name');
+            if (input) input.focus();
+          }
+        }));
+        panel.appendChild(el('div', { class: 'card feature' }, [pizzaMedia(mine), body]));
+        return;
+      }
+      if (!pizzaDraft) pizzaDraft = { editing: false, name: '', photo: '' };
+      const draft = pizzaDraft;
+      const input = el('input', { type: 'text', id: 'pizza-name', name: 'pizza-name', maxlength: '40', autocomplete: 'off', placeholder: 'Ex. : La Truffe du Dimanche' });
+      input.value = draft.name;
+      input.addEventListener('input', () => { draft.name = input.value; });
+      const fileInput = el('input', { type: 'file', id: 'pizza-photo', name: 'pizza-photo', accept: 'image/*' });
+      const previewImg = el('img', { class: 'thumb', alt: 'Aperçu de ta photo' });
+      const preview = el('div', { class: 'photo-preview', hidden: true }, [
+        previewImg,
+        el('button', {
+          type: 'button',
+          class: 'btn-secondary',
+          text: 'Retirer la photo',
+          onclick: () => { clearPhoto(); fileInput.focus(); }
+        })
+      ]);
+      // The draft's photo is a reduced JPEG data URL, or '' when there is none.
+      function showPhoto() {
+        if (draft.photo) previewImg.src = draft.photo;
+        else previewImg.removeAttribute('src');
+        preview.hidden = !draft.photo;
+      }
+      function clearPhoto() {
+        draft.photo = '';
+        fileInput.value = '';
+        showPhoto();
+      }
+      showPhoto();
+      const error = el('p', { class: 'error', id: 'pizza-error', role: 'alert' });
+      const submit = el('button', { type: 'submit', class: 'btn-primary', text: draft.editing ? 'Enregistrer' : 'Soumettre ma pizza' });
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        error.textContent = '';
+        if (!file) return;
+        // Submitting is paused while the image is being reduced.
+        submit.disabled = true;
+        reducePhoto(file)
+          .then(dataUrl => {
+            draft.photo = dataUrl;
+            showPhoto();
+          })
+          .catch(() => {
+            clearPhoto();
+            error.textContent = 'Impossible de lire cette image.';
+          })
+          .finally(() => { submit.disabled = false; });
+      });
+      const form = el('form', { class: 'card', novalidate: '' }, [
+        draft.editing ? el('p', { class: 'eyebrow form-eyebrow', text: 'Modifier ta pizza' }) : null,
+        el('label', { for: 'pizza-name', text: 'Nom de ta pizza' }),
+        input,
+        el('div', { class: 'photo-field' }, [
+          el('label', { for: 'pizza-photo', text: draft.editing ? 'Nouvelle photo (facultatif)' : 'Photo de ta pizza (facultatif)' }),
+          fileInput,
+          preview
+        ]),
+        error,
+        submit,
+        draft.editing
+          ? el('button', { type: 'button', class: 'btn-secondary cancel-edit', text: 'Annuler', onclick: () => { pizzaDraft = null; render(); } })
+          : el('p', { class: 'hint', text: 'Pas obligé : tu peux voter sans pizza et soumettre la tienne plus tard.' }),
+        draft.editing ? el('p', { class: 'hint', text: 'Les notes déjà reçues restent acquises.' }) : null
+      ]);
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        submit.disabled = true;
+        const result = await (draft.editing ? updatePizza(draft.name, draft.photo) : submitPizza(draft.name, draft.photo));
+        submit.disabled = false;
+        if (result.error) {
+          error.textContent = result.error;
+          input.focus();
+        } else {
+          pizzaDraft = null;
+          render();
+        }
+      });
+      panel.appendChild(el('div', { class: 'split' }, [
+        form,
+        el('aside', { class: 'card aside' }, [
+          art(PIZZA_HERO),
+          el('h3', { text: 'Le jury, c\'est tout le monde' }),
+          el('ul', { class: 'tips' }, [
+            el('li', { text: 'Une seule pizza par participant.' }),
+            el('li', { text: 'Une belle photo donne envie de bien noter.' }),
+            el('li', { text: 'Tu ne peux pas voter pour ta propre pizza.' }),
+            el('li', { text: 'L\'ananas ? On n\'en parle pas. Jamais.' })
+          ])
+        ])
+      ]));
+    }
+
+    function renderVoter(panel, me) {
+      const others = state.pizzas.filter(z => z.participant_id !== me.id).sort(byCreatedAt);
+      if (!others.length) {
+        panel.appendChild(emptyState('Aucune pizza à noter pour l\'instant. Le four chauffe…'));
+        return;
+      }
+      const grid = el('div', { class: 'pizza-grid' });
+      others.forEach(pizza => {
+        const body = el('div', { class: 'body' }, [
+          el('p', { class: 'pizza-name', text: pizza.name }),
+          el('p', { class: 'author', text: 'par ' + pseudoOf(pizza.participant_id) })
+        ]);
+        const myVote = state.votes.find(v => v.pizza_id === pizza.id && v.voter_id === me.id);
+        if (myVote) {
+          body.appendChild(el('p', { class: 'my-score', text: 'Ta note : ' + myVote.score + '/10' }));
+        } else {
+          const picked = pendingScores[pizza.id];
+          const scores = el('div', { class: 'scores', role: 'group', 'aria-label': 'Note pour ' + pizza.name });
+          for (let n = 1; n <= 10; n++) {
+            scores.appendChild(el('button', {
+              type: 'button',
+              'aria-pressed': String(picked === n),
+              text: String(n),
+              onclick: () => { pendingScores[pizza.id] = n; render(); }
+            }));
+          }
+          const error = el('p', { class: 'error', role: 'alert' });
+          const confirm = el('button', {
+            type: 'button',
+            class: 'btn-primary',
+            disabled: !picked,
+            text: picked ? 'Valider ma note : ' + picked + '/10' : 'Valider ma note',
+            onclick: async () => {
+              confirm.disabled = true;
+              const result = await castVote(pizza.id, picked);
+              confirm.disabled = false;
+              if (result.error) {
+                error.textContent = result.error;
+              } else {
+                delete pendingScores[pizza.id];
+                render();
+              }
+            }
+          });
+          body.appendChild(scores);
+          if (picked) body.appendChild(el('p', { class: 'reaction', text: scoreReaction(picked) }));
+          body.appendChild(confirm);
+          body.appendChild(error);
+          body.appendChild(el('p', { class: 'final', text: 'Un vote est définitif. Comme une recette de Nonna.' }));
+        }
+        grid.appendChild(el('article', { class: 'card pizza-card' }, [pizzaMedia(pizza), body]));
+      });
+      panel.appendChild(grid);
+    }
+
+    function renderRanking(panel, me) {
+      const rows = ranking();
+      if (!rows.length) {
+        panel.appendChild(emptyState('Aucune pizza pour l\'instant. Même pas une petite Margherita ?'));
+        return;
+      }
+      const list = el('ol', { class: 'ranking' });
+      rows.forEach(({ pizza, count, avg }, i) => {
+        const mine = pizza.participant_id === me.id;
+        const score = count
+          ? el('div', { class: 'score' }, [
+              el('p', { class: 'avg', text: formatAvg(avg) }),
+              el('p', { class: 'count', text: formatCount(count) })
+            ])
+          : el('div', { class: 'score' }, [el('p', { class: 'none', text: 'Pas encore de note' })]);
+        const name = el('p', { class: 'pizza-name', text: pizza.name });
+        if (mine) name.appendChild(el('span', { class: 'mine-tag', text: 'Toi' }));
+        // Fun titles only once a pizza has been rated.
+        const rankTitle = !count ? null : i < 3 ? RANK_TITLES[i] : i === rows.length - 1 ? LAST_TITLE : null;
+        list.appendChild(el('li', { class: 'row' + (i < 3 ? ' top-' + (i + 1) : '') + (mine ? ' mine' : '') }, [
+          el('span', { class: 'rank', text: String(i + 1) }),
+          pizzaThumb(pizza),
+          el('div', { class: 'info' }, [
+            rankTitle ? el('p', { class: 'rank-title', text: rankTitle }) : null,
+            name,
+            el('p', { class: 'author', text: 'par ' + pseudoOf(pizza.participant_id) })
+          ]),
+          score,
+          count ? votesList(pizza.id) : null
+        ]));
+      });
+      panel.appendChild(list);
+    }
+
+    // ---- Mini-games: local only, no effect on the contest. ----
+
+    const GAMES = [{ id: 'pizzaiolo', name: 'Commandes express', rule: 'Sers un max de pizzas en 30 secondes', start: startRound }];
+    const ROUND_MS = 30000;
+    const INGREDIENTS = ['Sauce tomate', 'Mozzarella', 'Jambon', 'Champignons', 'Olives', 'Basilic', 'Chorizo', 'Poivrons'];
+    // Each ingredient's illustration and topping layer.
+    const INGREDIENT_KEYS = {
+      'Sauce tomate': 'sauce', 'Mozzarella': 'mozza', 'Jambon': 'jambon', 'Champignons': 'champi',
+      'Olives': 'olives', 'Basilic': 'basilic', 'Chorizo': 'chorizo', 'Poivrons': 'poivrons'
+    };
+    const ORDERS = [
+      { name: 'Margherita', ingredients: ['Sauce tomate', 'Mozzarella', 'Basilic'] },
+      { name: 'Regina', ingredients: ['Sauce tomate', 'Mozzarella', 'Jambon', 'Champignons'] },
+      { name: 'Diavola', ingredients: ['Sauce tomate', 'Mozzarella', 'Chorizo'] },
+      { name: 'Végétarienne', ingredients: ['Sauce tomate', 'Mozzarella', 'Champignons', 'Poivrons', 'Olives'] },
+      { name: 'Napolitaine', ingredients: ['Sauce tomate', 'Mozzarella', 'Olives', 'Basilic'] },
+      { name: 'Paysanne', ingredients: ['Sauce tomate', 'Jambon', 'Champignons', 'Olives'] }
+    ];
+    const CUSTOMERS = ['Luigi', 'Giulia', 'Marco', 'Sofia', 'Pattin', 'Nonna'];
+    // Circumference of the countdown ring (r = 28 on a 64×64 dial).
+    const RING = 2 * Math.PI * 28;
+
+    // The running round, or null. While it is set, live updates do not re-render the page.
+    let round = null;
+    // The last round's result shown on the end card, or null for the games menu.
+    let gameEnd = null;
+    // True while the mafiosi are on screen, after the pineapple was used.
+    let mafia = false;
+
+    function bestKey(gameId) {
+      return 'pps-best-' + gameId + '-' + myUid;
+    }
+
+    // A stored value that is not a non-negative integer counts as no score.
+    function readBest(gameId) {
+      const raw = localStorage.getItem(bestKey(gameId));
+      return raw !== null && /^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) ? Number(raw) : null;
+    }
+
+    function formatPizzas(n) {
+      return n + (n === 1 ? ' pizza' : ' pizzas');
+    }
+
+    function pick(list) {
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function renderGames(panel) {
+      if (round) return renderRound(panel);
+      if (gameEnd) return renderGameEnd(panel);
+      GAMES.forEach(game => {
+        const best = readBest(game.id);
+        panel.appendChild(el('div', { class: 'card game-hero' }, [
+          el('div', { class: 'art' }, [art(OVEN)]),
+          el('div', { class: 'body' }, [
+            el('p', { class: 'eyebrow', text: 'Mini-jeu · 30 secondes' }),
+            el('h3', { class: 'game-title', text: game.name }),
+            el('p', { class: 'game-rule', text: game.rule }),
+            el('ul', { class: 'icon-row', 'aria-hidden': 'true' },
+              INGREDIENTS.map(name => el('li', {}, [art(iconMarkup(INGREDIENT_KEYS[name]))]))),
+            best === null ? null : el('p', { class: 'best', text: 'Ton record : ' + formatPizzas(best) }),
+            el('button', { type: 'button', class: 'btn-primary', text: 'Jouer', onclick: game.start })
+          ])
+        ]));
+      });
+    }
+
+    function startRound() {
+      gameEnd = null;
+      round = { endAt: Date.now() + ROUND_MS, served: 0, mistakes: 0, order: null, added: new Set(), timer: null, view: null };
+      nextOrder();
+      render();
+      round.timer = setInterval(tick, 200);
+    }
+
+    // Draws a new order whose pizza differs from the previous one.
+    function nextOrder() {
+      const previous = round.order && round.order.pizza;
+      round.order = { customer: pick(CUSTOMERS), pizza: pick(ORDERS.filter(o => o !== previous)) };
+      round.added = new Set();
+    }
+
+    function cancelRound() {
+      if (!round) return;
+      clearInterval(round.timer);
+      round = null;
+    }
+
+    function secondsLeft() {
+      return Math.max(0, Math.ceil((round.endAt - Date.now()) / 1000));
+    }
+
+    // The countdown is read from the clock on every tick, so a late tick never drifts.
+    function tick() {
+      if (Date.now() >= round.endAt) finishRound();
+      else updateClock();
+    }
+
+    function updateClock() {
+      const left = Math.max(0, round.endAt - Date.now());
+      round.view.time.textContent = String(secondsLeft());
+      round.view.ring.style.strokeDashoffset = String(RING * (1 - left / ROUND_MS));
+      round.view.clock.classList.toggle('hurry', left <= 5000);
+    }
+
+    function finishRound() {
+      const { served, mistakes } = round;
+      cancelRound();
+      const best = readBest('pizzaiolo');
+      const record = served > (best === null ? 0 : best);
+      if (best === null || served > best) localStorage.setItem(bestKey('pizzaiolo'), String(served));
+      gameEnd = { served, mistakes, best: best === null ? served : Math.max(best, served), record };
+      render();
+      const again = app.querySelector('[data-action="again"]');
+      if (again) again.focus();
+    }
+
+    function addIngredient(name, button) {
+      if (Date.now() >= round.endAt) return finishRound();
+      const needed = round.order.pizza.ingredients;
+      if (needed.includes(name) && !round.added.has(name)) {
+        round.added.add(name);
+        button.setAttribute('aria-pressed', 'true');
+        if (round.added.size === needed.length) {
+          round.served++;
+          nextOrder();
+        }
+      } else {
+        round.mistakes++;
+        button.classList.add('wrong');
+        setTimeout(() => button.classList.remove('wrong'), 300);
+      }
+      updateRound();
+    }
+
+    function renderRound(panel) {
+      const statBox = label => el('p', { class: 'stat' }, [
+        el('strong'),
+        el('span', { class: 'muted', text: label })
+      ]);
+      const ring = art('<svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="28"/><circle class="ring" cx="32" cy="32" r="28"/></svg>');
+      const timeValue = el('strong');
+      const clock = el('p', { class: 'stat' }, [
+        el('span', { class: 'clock' }, [ring, timeValue]),
+        el('span', { class: 'muted', text: 'secondes' })
+      ]);
+      const served = statBox('servies');
+      const mistakes = statBox('erreurs');
+      const customer = el('div', { class: 'avatar-frame' });
+      const order = el('p', { class: 'order', 'aria-live': 'polite' });
+      const items = el('ul', { class: 'order-items', 'aria-label': 'Ingrédients de la commande' });
+      const pizza = art(pizzaMarkup(LAYERS, true));
+      const toast = el('span', { class: 'toast', 'aria-hidden': 'true', text: SERVE_CHEERS[0] });
+      // The secret ingredient peeks out from behind the board.
+      const pineapple = el('button', { type: 'button', class: 'pineapple', 'aria-label': 'Ananas', title: 'Un ingrédient… secret ?', onclick: callTheFamily }, [art(PINEAPPLE)]);
+      const board = el('div', { class: 'board' }, [
+        pineapple,
+        el('div', { class: 'plate', 'aria-hidden': 'true' }, [pizza]),
+        toast
+      ]);
+      const buttons = INGREDIENTS.map(name => {
+        const button = el('button', { type: 'button', 'aria-pressed': 'false' }, [
+          art(iconMarkup(INGREDIENT_KEYS[name])),
+          el('span', { text: name })
+        ]);
+        button.addEventListener('click', () => addIngredient(name, button));
+        return button;
+      });
+      ring.lastChild.style.strokeDasharray = String(RING);
+      round.view = {
+        time: timeValue, ring: ring.lastChild, clock, served: served.firstChild, mistakes: mistakes.firstChild,
+        customer, order, items, buttons, board, toast, layers: Array.from(pizza.querySelectorAll('.layer')),
+        orderKey: null, servedShown: round.served
+      };
+      updateClock();
+      panel.appendChild(el('div', { class: 'play' }, [
+        el('div', { class: 'card scene' }, [
+          el('div', { class: 'scene-top' }, [
+            el('div', { class: 'game-stats' }, [clock, served, mistakes]),
+            // Leaving mid-round saves no score, like switching tabs.
+            el('button', { type: 'button', class: 'quit', text: '✕', 'aria-label': 'Quitter la partie', title: 'Quitter la partie', onclick: () => { cancelRound(); render(); } })
+          ]),
+          el('div', { class: 'customer' }, [customer, el('div', { class: 'bubble' }, [order, items])]),
+          board
+        ]),
+        el('div', { class: 'ingredients', role: 'group', 'aria-label': 'Ingrédients' }, buttons)
+      ]));
+      updateRound();
+    }
+
+    // Updates the running round in place: counters, the customer and their order, the pizza and the buttons.
+    function updateRound() {
+      const { view, order, added } = round;
+      view.served.textContent = String(round.served);
+      view.mistakes.textContent = String(round.mistakes);
+      if (view.servedShown !== round.served) {
+        view.servedShown = round.served;
+        view.toast.textContent = pick(SERVE_CHEERS);
+        view.board.classList.remove('served');
+        void view.board.offsetWidth;
+        view.board.classList.add('served');
+      }
+      if (view.orderKey !== order) {
+        view.orderKey = order;
+        view.customer.replaceChildren(art(avatarMarkup(order.customer)));
+        view.order.replaceChildren(
+          el('strong', { text: order.customer }),
+          document.createTextNode(' veut une '),
+          el('em', { text: order.pizza.name }),
+          document.createTextNode(' :')
+        );
+        view.buttons.forEach(b => b.setAttribute('aria-pressed', 'false'));
+      }
+      const on = new Set(Array.from(added, name => INGREDIENT_KEYS[name]));
+      view.layers.forEach(layer => layer.classList.toggle('on', on.has(layer.getAttribute('data-layer'))));
+      view.items.replaceChildren(...order.pizza.ingredients.map(name =>
+        el('li', { class: added.has(name) ? 'added' : '' }, [art(iconMarkup(INGREDIENT_KEYS[name])), document.createTextNode(name)])
+      ));
+    }
+
+    function renderGameEnd(panel) {
+      const { served, mistakes, best, record } = gameEnd;
+      panel.appendChild(el('div', { class: 'card end-card' }, [
+        art(TROPHY),
+        el('h3', { class: 'game-title', text: 'Temps écoulé !' }),
+        el('p', { class: 'big-score' }, [el('strong', { text: formatPizzas(served) }), el('span', { text: served === 1 ? ' servie' : ' servies' })]),
+        el('p', { class: 'verdict', text: endVerdict(served) }),
+        el('p', { class: 'stat muted', text: mistakes + (mistakes === 1 ? ' erreur' : ' erreurs') }),
+        el('p', { class: 'stat', text: 'Ton record : ' + formatPizzas(best) }),
+        record ? el('p', { class: 'record', text: 'Nouveau record !' }) : null,
+        el('div', { class: 'end-actions' }, [
+          el('button', { type: 'button', class: 'btn-secondary', text: 'Retour aux jeux', onclick: () => { gameEnd = null; render(); } }),
+          el('button', { type: 'button', class: 'btn-primary', 'data-action': 'again', text: 'Rejouer', onclick: startRound })
+        ])
+      ]));
+    }
+
+    function renderMessage(text) {
+      app.classList.remove('playing');
+      app.replaceChildren(
+        topbar([brand()]),
+        el('main', { class: 'page loading' }, [el('div', {}, [art(PIZZA_DEFAULT), el('p', { class: 'empty', text })])])
+      );
+    }
+
+    function toMillis(timestamp) {
+      return timestamp ? timestamp.toMillis() : Date.now();
+    }
+
+    // Someone wrote: mirror the collection and re-render on the same tab.
+    // A form being typed in (pseudo, pizza name) is left alone unless the device's participant changed.
+    // A running mini-game round, or the mafiosi's visit, is never re-rendered: the page catches up after.
+    function listen() {
+      const loaded = new Set();
+      COLLECTIONS.forEach(name => {
+        onSnapshot(collection(db, name), snapshot => {
+          const before = currentParticipant();
+          state = Object.assign({}, state, {
+            [name]: snapshot.docs.map(d => {
+              const data = d.data({ serverTimestamps: 'estimate' });
+              return Object.assign({}, data, { id: d.id, created_at: toMillis(data.created_at) });
+            })
+          });
+          const first = !loaded.has(name) && loaded.add(name).size === COLLECTIONS.length;
+          if (loaded.size < COLLECTIONS.length || round || mafia) return;
+          const after = currentParticipant();
+          const typing = document.activeElement && document.activeElement.tagName === 'INPUT';
+          if (!first && (before && before.id) === (after && after.id) && (typing || !after)) return;
+          render();
+        }, () => renderMessage(NETWORK_ERROR));
+      });
+    }
+
+    renderMessage('On préchauffe le four…');
+    onAuthStateChanged(auth, user => {
+      if (!user || myUid) return;
+      myUid = user.uid;
+      listen();
+    });
+    signInAnonymously(auth).catch(() => renderMessage(NETWORK_ERROR));
+  </script>
+</body>
+</html>
