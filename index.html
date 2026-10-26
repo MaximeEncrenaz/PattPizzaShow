@@ -639,6 +639,30 @@
     .board.served .toast { animation: toast .9s ease; }
     .toast { z-index: 2; }
 
+    /* The boss's visit: a tag on the bubble, a halo around Pattin, the tiles flip to the odd ingredients. */
+    .special-tag {
+      position: absolute;
+      top: -27px;
+      right: -8px;
+      padding: 3px 10px;
+      font-family: var(--sans);
+      font-size: .66rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #fff;
+      background: linear-gradient(90deg, #b04bd6, #ff4f9a);
+      border-radius: 999px;
+      box-shadow: 0 6px 14px -6px rgba(176, 75, 214, .8);
+      animation: pop .4s cubic-bezier(.3, 1.6, .5, 1);
+    }
+    .avatar-frame.boss { border-radius: 50%; box-shadow: 0 0 0 3px var(--gold), 0 0 26px 4px rgba(234, 185, 104, .55); animation: boss-wobble .6s ease-in-out 2; }
+    .ingredients.weird button { background: linear-gradient(180deg, rgba(176, 75, 214, .28), rgba(255, 79, 154, .1)); border-color: rgba(255, 79, 154, .45); }
+    .ingredients.weird button[aria-pressed="true"] { border-color: var(--basil); background: linear-gradient(180deg, rgba(103, 179, 91, .3), rgba(103, 179, 91, .1)); }
+    .ingredients.flip button { animation: flip .5s ease both; }
+    .ingredients.flip button:nth-child(2n) { animation-delay: .05s; }
+    .ingredients.flip button:nth-child(3n) { animation-delay: .1s; }
+
     /* Half hidden behind the board: you have to want it. */
     .pineapple {
       position: absolute;
@@ -790,6 +814,8 @@
     @keyframes toast { 0% { opacity: 0; transform: translate(-50%, 10px); } 25%, 70% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -14px); } }
     @keyframes pop { from { transform: scale(.6); opacity: 0; } }
     @keyframes blackout { from { opacity: 0; } }
+    @keyframes flip { 0% { transform: rotateY(0); } 50% { transform: rotateY(90deg); } 100% { transform: rotateY(0); } }
+    @keyframes boss-wobble { 25% { transform: rotate(-8deg) scale(1.08); } 75% { transform: rotate(8deg) scale(1.08); } }
     @keyframes fade-in { from { opacity: 0; } }
     @keyframes slide-left { from { opacity: 0; transform: translateX(-120px); } }
     @keyframes slide-right { from { opacity: 0; transform: translateX(120px); } }
@@ -971,6 +997,7 @@
     @media (max-width: 760px) and (max-height: 700px) {
       .customer { margin-top: 8px; }
       .avatar-frame { width: 44px; height: 44px; }
+      .board { --plate: min(58vw, 240px, 21dvh); margin-top: 4px; }
       .ingredients button { min-height: 64px; }
       .ingredients button svg { width: 34px; height: 34px; }
     }
@@ -1197,6 +1224,26 @@
     };
     const LAYERS = ['sauce', 'mozza', 'jambon', 'champi', 'olives', 'chorizo', 'poivrons', 'basilic'];
 
+    // Toppings of Pattin's special orders, which nobody should eat.
+    Object.assign(LAYER_ART, {
+      choco: '<circle cx="100" cy="100" r="76" fill="#5a2e1a"/><path d="M58 82 Q100 60 142 90 M56 126 Q100 150 144 118" stroke="#7a4426" stroke-width="6" fill="none" stroke-linecap="round" opacity=".7"/>',
+      fraises: [[80, 64, -20], [132, 78, 15], [64, 118, 30], [112, 128, -10], [96, 96, 0], [142, 124, 25]]
+        .map(([x, y, r]) => '<g ' + at(x, y, r) + '><path d="M0 10 Q-10 1 -9 -5 Q-7 -10 0 -8 Q7 -10 9 -5 Q10 1 0 10 Z" fill="#e8384f"/><path d="M-5 -8 L0 -6 L5 -8 L2 -11 L0 -14 L-2 -11 Z" fill="#4c9a3f"/><circle cx="-3" cy="-2" r="1" fill="#ffd76a"/><circle cx="3" cy="0" r="1" fill="#ffd76a"/><circle cx="0" cy="4" r="1" fill="#ffd76a"/></g>').join(''),
+      chantilly: [[100, 54], [60, 92], [146, 98], [90, 142], [134, 142], [104, 102]]
+        .map(([x, y]) => '<g ' + at(x, y) + '><circle r="10" fill="#fffaf0" stroke="#eadfca" stroke-width="1.5"/><circle cy="-6" r="7" fill="#fffdf8" stroke="#eadfca" stroke-width="1.5"/><circle cy="-11" r="3.5" fill="#fff"/></g>').join(''),
+      bonbons: [[78, 80, 20, '#ff4f9a'], [126, 64, -30, '#4fb3ff'], [150, 112, 10, '#ffd23f'], [70, 132, -15, '#7ed957'], [118, 146, 30, '#ff4f9a'], [104, 108, 0, '#b07bff']]
+        .map(([x, y, r, c]) => '<g ' + at(x, y, r) + '><path d="M-15 -5 L-7 0 L-15 5 Z M15 -5 L7 0 L15 5 Z" fill="' + c + '" opacity=".75"/><ellipse rx="8" ry="6" fill="' + c + '"/></g>').join(''),
+      sardines: [[90, 70, -15], [134, 104, 40], [70, 124, 10], [114, 146, -25]]
+        .map(([x, y, r]) => '<g ' + at(x, y, r) + '><path d="M-16 0 Q-6 -8 8 -3 L15 -8 L14 0 L15 8 L8 3 Q-6 8 -16 0 Z" fill="#9fb4c4" stroke="#6f8696" stroke-width="1.2"/><circle cx="-11" cy="-1" r="1.5" fill="#1a1a1a"/></g>').join(''),
+      cornichons: [[100, 78, 30], [66, 104, -40], [140, 90, 70], [96, 132, -10], [136, 136, 40], [62, 70, 10]]
+        .map(([x, y, r]) => '<g ' + at(x, y, r) + '><ellipse rx="11" ry="5.5" fill="#6b8e23" stroke="#4d6b16" stroke-width="1.2"/><circle cx="-4" cy="-1" r="1.2" fill="#9cc43c"/><circle cx="3" cy="1.5" r="1.2" fill="#9cc43c"/></g>').join(''),
+      frites: [[84, 92, 30], [118, 84, -40], [100, 116, 80], [70, 110, -10], [132, 120, 15], [100, 64, 60], [86, 150, -30], [146, 96, 100]]
+        .map(([x, y, r]) => '<g ' + at(x, y, r) + '><rect x="-12" y="-2.5" width="24" height="5" rx="2" fill="#f7c948" stroke="#d9a41f" stroke-width="1"/></g>').join(''),
+      guimauves: [[76, 72, 10, '#ffd6e7'], [124, 70, -20, '#fff'], [146, 114, 30, '#ffd6e7'], [100, 104, 0, '#fff'], [66, 124, -10, '#fff'], [112, 146, 20, '#ffd6e7']]
+        .map(([x, y, r, c]) => '<g ' + at(x, y, r) + '><rect x="-8" y="-7" width="16" height="14" rx="5" fill="' + c + '" stroke="#efc4d6" stroke-width="1.2"/></g>').join('')
+    });
+    const WEIRD_LAYERS = ['choco', 'fraises', 'chantilly', 'bonbons', 'sardines', 'cornichons', 'frites', 'guimauves'];
+
     const CRUST_SPOTS = [0, 38, 81, 119, 158, 203, 241, 284, 322].map((deg, i) => {
       const a = deg * Math.PI / 180;
       const r = 86 + (i % 3);
@@ -1243,6 +1290,19 @@
       poivrons: '<path d="M32 24 Q32 14 38 10" stroke="#2c6b28" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M18 26 Q14 52 26 54 Q32 56 32 50 Q32 56 38 54 Q50 52 46 26 Q40 20 32 24 Q24 20 18 26 Z" fill="#3fa046"/><path d="M24 30 Q22 42 26 48" stroke="#8fdc8a" stroke-width="3" fill="none" opacity=".6" stroke-linecap="round"/>',
       basilic: '<path d="M30 54 Q8 44 14 18 Q36 22 30 54 Z" fill="#3f8f3a"/><path d="M30 52 Q20 38 16 21" stroke="#2a6527" stroke-width="2" fill="none"/><path d="M34 54 Q56 46 52 14 Q30 20 34 54 Z" fill="#56a84a"/><path d="M34 52 Q44 36 50 17" stroke="#2f7a2c" stroke-width="2" fill="none"/>'
     };
+
+    Object.assign(INGREDIENT_ICONS, {
+      choco: '<rect x="18" y="10" width="28" height="10" rx="3" fill="#f4efe6" stroke="#d9cfbf" stroke-width="1.5"/><rect x="15" y="19" width="34" height="38" rx="9" fill="#6b3a1e"/><ellipse cx="32" cy="38" rx="12" ry="9" fill="#fff4e0"/><path d="M26 40 Q32 33 38 40" stroke="#6b3a1e" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse cx="21" cy="28" rx="2.5" ry="5" fill="#fff" opacity=".2"/>',
+      fraises: '<path d="M32 58 Q12 42 14 27 Q18 16 32 20 Q46 16 50 27 Q52 42 32 58 Z" fill="#e8384f"/><path d="M21 19 L32 23 L43 19 L37 14 L32 6 L27 14 Z" fill="#4c9a3f"/>' +
+        [[24, 30], [32, 35], [40, 30], [27, 42], [37, 42], [32, 50]].map(([x, y]) => '<ellipse cx="' + x + '" cy="' + y + '" rx="1.3" ry="1.9" fill="#ffd76a"/>').join(''),
+      chantilly: '<path d="M12 52 Q32 60 52 52 L48 43 Q32 50 16 43 Z" fill="#fffaf0" stroke="#e5d8bf" stroke-width="1.5"/><path d="M16 43 Q32 50 48 43 L43 32 Q32 38 21 32 Z" fill="#fff8ec" stroke="#e5d8bf" stroke-width="1.5"/><path d="M21 32 Q32 38 43 32 L32 10 Z" fill="#fffdf8" stroke="#e5d8bf" stroke-width="1.5"/><path d="M38 9 Q41 3 46 2" stroke="#4c9a3f" stroke-width="1.6" fill="none"/><circle cx="37" cy="11" r="5" fill="#e8384f"/>',
+      bonbons: '<g transform="rotate(-20 24 24)"><path d="M6 18 L14 24 L6 30 Z M42 18 L34 24 L42 30 Z" fill="#ff7ab8"/><ellipse cx="24" cy="24" rx="11" ry="8" fill="#ff4f9a"/></g><g transform="rotate(15 40 44)"><path d="M22 38 L30 44 L22 50 Z M58 38 L50 44 L58 50 Z" fill="#7cc8ff"/><ellipse cx="40" cy="44" rx="11" ry="8" fill="#4fb3ff"/></g>',
+      sardines: '<path d="M6 30 Q22 14 42 24 L56 16 L54 30 L56 44 L42 36 Q22 46 6 30 Z" fill="#9fb4c4" stroke="#6f8696" stroke-width="1.5"/><circle cx="14" cy="28" r="2.2" fill="#1a1a1a"/><path d="M12 35 Q28 40 42 32" stroke="#6f8696" stroke-width="2" fill="none"/><path d="M20 22 Q26 26 22 34" stroke="#c9d8e2" stroke-width="2" fill="none"/>',
+      cornichons: '<path d="M12 46 Q8 30 26 20 Q44 10 52 18 Q58 30 40 42 Q26 52 12 46 Z" fill="#6b8e23" stroke="#4d6b16" stroke-width="1.5"/>' +
+        [[22, 36], [30, 28], [40, 24], [44, 32], [32, 40], [20, 44]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r="1.8" fill="#9cc43c"/>').join(''),
+      frites: '<rect x="20" y="8" width="5" height="26" rx="2" fill="#f7c948" transform="rotate(-10 22 21)"/><rect x="28" y="5" width="5" height="28" rx="2" fill="#ffd866"/><rect x="36" y="8" width="5" height="26" rx="2" fill="#f7c948" transform="rotate(10 38 21)"/><rect x="31" y="12" width="5" height="22" rx="2" fill="#f2bd3a" transform="rotate(4 33 23)"/><path d="M16 28 L48 28 L44 58 L20 58 Z" fill="#d8402a"/><path d="M24 40 Q32 46 40 40" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>',
+      guimauves: '<rect x="10" y="26" width="22" height="24" rx="8" fill="#ffd6e7" stroke="#efb6cd" stroke-width="1.5"/><rect x="32" y="18" width="22" height="24" rx="8" fill="#fffafc" stroke="#e9d6de" stroke-width="1.5"/><ellipse cx="21" cy="30" rx="7" ry="2.5" fill="#fff" opacity=".6"/><ellipse cx="43" cy="22" rx="7" ry="2.5" fill="#fff" opacity=".8"/>'
+    });
 
     function iconMarkup(key) {
       return '<svg viewBox="0 0 64 64" class="icon">' + INGREDIENT_ICONS[key] + '</svg>';
@@ -1835,8 +1895,23 @@
     // Each ingredient's illustration and topping layer.
     const INGREDIENT_KEYS = {
       'Sauce tomate': 'sauce', 'Mozzarella': 'mozza', 'Jambon': 'jambon', 'Champignons': 'champi',
-      'Olives': 'olives', 'Basilic': 'basilic', 'Chorizo': 'chorizo', 'Poivrons': 'poivrons'
+      'Olives': 'olives', 'Basilic': 'basilic', 'Chorizo': 'chorizo', 'Poivrons': 'poivrons',
+      'Pâte choco': 'choco', 'Fraises': 'fraises', 'Chantilly': 'chantilly', 'Bonbons': 'bonbons',
+      'Sardines': 'sardines', 'Cornichons': 'cornichons', 'Frites': 'frites', 'Guimauves': 'guimauves'
     };
+    // Now and then Pattin, the boss, turns up: the ingredients flip over to these and he orders
+    // something nobody should eat. Served, it counts like any pizza and the usual ingredients come back.
+    const WEIRD_INGREDIENTS = ['Pâte choco', 'Fraises', 'Chantilly', 'Bonbons', 'Sardines', 'Cornichons', 'Frites', 'Guimauves'];
+    const WEIRD_ORDERS = [
+      { name: 'Spéciale anniversaire', ingredients: ['Pâte choco', 'Fraises', 'Chantilly', 'Bonbons'] },
+      { name: 'Marée sucrée', ingredients: ['Sardines', 'Chantilly', 'Guimauves'] },
+      { name: 'Cantine interdite', ingredients: ['Frites', 'Pâte choco', 'Cornichons'] },
+      { name: 'Cauchemar de la Nonna', ingredients: ['Sardines', 'Fraises', 'Frites', 'Cornichons'] },
+      { name: 'Pattin Royale', ingredients: ['Cornichons', 'Guimauves', 'Bonbons', 'Sardines', 'Chantilly'] }
+    ];
+    const BOSS = 'Pattin';
+    const BOSS_CHANCE = 0.2;
+    const BOSS_CHEERS = ['Pattin est ravi !', 'Beurk… mais servie !', 'Le patron adore !', 'Mamma mia… servie !'];
     const ORDERS = [
       { name: 'Margherita', ingredients: ['Sauce tomate', 'Mozzarella', 'Basilic'] },
       { name: 'Regina', ingredients: ['Sauce tomate', 'Mozzarella', 'Jambon', 'Champignons'] },
@@ -1845,7 +1920,7 @@
       { name: 'Napolitaine', ingredients: ['Sauce tomate', 'Mozzarella', 'Olives', 'Basilic'] },
       { name: 'Paysanne', ingredients: ['Sauce tomate', 'Jambon', 'Champignons', 'Olives'] }
     ];
-    const CUSTOMERS = ['Luigi', 'Giulia', 'Marco', 'Sofia', 'Pattin', 'Nonna'];
+    const CUSTOMERS = ['Luigi', 'Giulia', 'Marco', 'Sofia', 'Nonna'];
     // Circumference of the countdown ring (r = 28 on a 64×64 dial).
     const RING = 2 * Math.PI * 28;
 
@@ -1902,10 +1977,17 @@
       round.timer = setInterval(tick, 200);
     }
 
-    // Draws a new order whose pizza differs from the previous one.
+    // Draws a new order whose pizza differs from the previous one. The boss never comes
+    // for the first order, nor twice in a row.
     function nextOrder() {
-      const previous = round.order && round.order.pizza;
-      round.order = { customer: pick(CUSTOMERS), pizza: pick(ORDERS.filter(o => o !== previous)) };
+      const previous = round.order;
+      const special = Boolean(previous) && !previous.special && Math.random() < BOSS_CHANCE;
+      const menu = special ? WEIRD_ORDERS : ORDERS;
+      round.order = {
+        special,
+        customer: special ? BOSS : pick(CUSTOMERS),
+        pizza: pick(menu.filter(o => !previous || o !== previous.pizza))
+      };
       round.added = new Set();
     }
 
@@ -1952,6 +2034,7 @@
         button.setAttribute('aria-pressed', 'true');
         if (round.added.size === needed.length) {
           round.served++;
+          round.cheer = pick(round.order.special ? BOSS_CHEERS : SERVE_CHEERS);
           nextOrder();
         }
       } else {
@@ -1978,7 +2061,7 @@
       const customer = el('div', { class: 'avatar-frame' });
       const order = el('p', { class: 'order', 'aria-live': 'polite' });
       const items = el('ul', { class: 'order-items', 'aria-label': 'Ingrédients de la commande' });
-      const pizza = art(pizzaMarkup(LAYERS, true));
+      const pizza = art(pizzaMarkup(LAYERS.concat(WEIRD_LAYERS), true));
       const toast = el('span', { class: 'toast', 'aria-hidden': 'true', text: SERVE_CHEERS[0] });
       // The secret ingredient peeks out from behind the board.
       const pineapple = el('button', { type: 'button', class: 'pineapple', 'aria-label': 'Ananas', title: 'Un ingrédient… secret ?', onclick: callTheFamily }, [art(PINEAPPLE)]);
@@ -1987,19 +2070,18 @@
         el('div', { class: 'plate', 'aria-hidden': 'true' }, [pizza]),
         toast
       ]);
-      const buttons = INGREDIENTS.map(name => {
-        const button = el('button', { type: 'button', 'aria-pressed': 'false' }, [
-          art(iconMarkup(INGREDIENT_KEYS[name])),
-          el('span', { text: name })
-        ]);
-        button.addEventListener('click', () => addIngredient(name, button));
+      // Each button's ingredient is set by updateRound, as the boss swaps them all.
+      const buttons = INGREDIENTS.map(() => {
+        const button = el('button', { type: 'button', 'aria-pressed': 'false' });
+        button.addEventListener('click', () => addIngredient(button.ingredient, button));
         return button;
       });
+      const grid = el('div', { class: 'ingredients', role: 'group', 'aria-label': 'Ingrédients' }, buttons);
       ring.lastChild.style.strokeDasharray = String(RING);
       round.view = {
         time: timeValue, ring: ring.lastChild, clock, served: served.firstChild, mistakes: mistakes.firstChild,
-        customer, order, items, buttons, board, toast, layers: Array.from(pizza.querySelectorAll('.layer')),
-        orderKey: null, servedShown: round.served
+        customer, order, items, buttons, grid, board, toast, layers: Array.from(pizza.querySelectorAll('.layer')),
+        orderKey: null, servedShown: round.served, special: null
       };
       updateClock();
       panel.appendChild(el('div', { class: 'play' }, [
@@ -2012,7 +2094,7 @@
           el('div', { class: 'customer' }, [customer, el('div', { class: 'bubble' }, [order, items])]),
           board
         ]),
-        el('div', { class: 'ingredients', role: 'group', 'aria-label': 'Ingrédients' }, buttons)
+        grid
       ]));
       updateRound();
     }
@@ -2024,7 +2106,7 @@
       view.mistakes.textContent = String(round.mistakes);
       if (view.servedShown !== round.served) {
         view.servedShown = round.served;
-        view.toast.textContent = pick(SERVE_CHEERS);
+        view.toast.textContent = round.cheer;
         view.board.classList.remove('served');
         void view.board.offsetWidth;
         view.board.classList.add('served');
@@ -2032,19 +2114,45 @@
       if (view.orderKey !== order) {
         view.orderKey = order;
         view.customer.replaceChildren(art(avatarMarkup(order.customer)));
-        view.order.replaceChildren(
-          el('strong', { text: order.customer }),
-          document.createTextNode(' veut une '),
-          el('em', { text: order.pizza.name }),
-          document.createTextNode(' :')
-        );
+        view.customer.classList.toggle('boss', order.special);
+        view.order.replaceChildren(...(order.special
+          ? [
+              el('span', { class: 'special-tag', text: 'Commande du patron' }),
+              el('strong', { text: order.customer }),
+              document.createTextNode(' exige sa « '),
+              el('em', { text: order.pizza.name }),
+              document.createTextNode(' » !')
+            ]
+          : [
+              el('strong', { text: order.customer }),
+              document.createTextNode(' veut une '),
+              el('em', { text: order.pizza.name }),
+              document.createTextNode(' :')
+            ]));
         view.buttons.forEach(b => b.setAttribute('aria-pressed', 'false'));
+        if (view.special !== order.special) swapIngredients(view, order.special);
       }
       const on = new Set(Array.from(added, name => INGREDIENT_KEYS[name]));
       view.layers.forEach(layer => layer.classList.toggle('on', on.has(layer.getAttribute('data-layer'))));
       view.items.replaceChildren(...order.pizza.ingredients.map(name =>
         el('li', { class: added.has(name) ? 'added' : '' }, [art(iconMarkup(INGREDIENT_KEYS[name])), document.createTextNode(name)])
       ));
+    }
+
+    // Puts the usual ingredients, or the boss's, on the buttons; after the first draw the tiles flip over.
+    function swapIngredients(view, special) {
+      const first = view.special === null;
+      view.special = special;
+      (special ? WEIRD_INGREDIENTS : INGREDIENTS).forEach((name, i) => {
+        const button = view.buttons[i];
+        button.ingredient = name;
+        button.replaceChildren(art(iconMarkup(INGREDIENT_KEYS[name])), el('span', { text: name }));
+      });
+      view.grid.classList.toggle('weird', special);
+      if (first) return;
+      view.grid.classList.remove('flip');
+      void view.grid.offsetWidth;
+      view.grid.classList.add('flip');
     }
 
     function renderGameEnd(panel) {
