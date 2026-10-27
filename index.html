@@ -947,6 +947,12 @@
     }
     .end-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 26px; }
     .end-actions .btn-primary { margin-top: 0; }
+    /* The round took the throne: the emperor stands above the score, a size up from the game card. */
+    .throne.coronation { grid-template-columns: 1fr; justify-items: center; gap: 8px; margin-top: 18px; padding: 16px 18px 18px; }
+    .throne.coronation .throne-art { width: 150px; }
+    .throne.coronation .eyebrow { font-size: .78rem; }
+    .throne.coronation h4 { font-size: 1.5rem; }
+    .throne.coronation .ave { font-size: 1.1rem; }
 
     /* ---- Motion ---- */
 
@@ -1158,6 +1164,9 @@
       .trophy { width: 96px; height: 96px; }
       .end-actions { grid-template-columns: 1fr; }
       .end-actions .btn-primary { order: -1; }
+      .throne.coronation { margin-top: 14px; padding: 12px 14px 14px; }
+      .throne.coronation .throne-art { width: 120px; }
+      .throne.coronation h4 { font-size: 1.3rem; }
     }
 
     /* Short phones: tighter round so it still fits without scrolling. */
@@ -2250,9 +2259,20 @@
 
     // Adds the record to a finished round's end card and, when beaten, saves it in Firestore
     // without waiting. A rejected write is shown on that end card if it is still on screen.
+    // The round crowns the player when the throne changes hands: empty, or held by another player
+    // with a lower score (a tie keeps the earlier emperor). Pseudos are read now, so a later snapshot can't change them.
     function saveBest(end, score) {
       const best = readBest(end.game) || 0;
+      const emperor = emperorOf(end.game);
       Object.assign(end, { best: Math.max(best, score), record: score >= 1 && score > best });
+      if (score >= 1 && (!emperor || (emperor.participant_id !== myUid && score > emperor.score))) {
+        end.crowned = {
+          deposed: emperor ? emperor.participant_id : null,
+          deposedPseudo: emperor ? pseudoOf(emperor.participant_id) : null,
+          pseudo: currentParticipant().pseudo,
+          at: Date.now()
+        };
+      }
       if (end.record) {
         saveBestScore(end.game, score).then(result => {
           if (!result.error || gameEnd !== end) return;
@@ -2498,11 +2518,31 @@
       view.grid.classList.add('flip');
     }
 
+    // How long the coronation entrance may replay: a snapshot re-rendering the end card after that keeps it still.
+    const CORONATION_MS = 1500;
+
+    // The coronation on an end card, when the round took the throne.
+    function coronation(end) {
+      const { crowned } = end;
+      if (!crowned) return null;
+      const enter = Date.now() - crowned.at < CORONATION_MS;
+      return el('div', { class: 'throne coronation' + (enter ? ' enter' : '') }, [
+        art(EMPEROR),
+        el('div', {}, [
+          el('p', { class: 'eyebrow', text: 'Nouvel empereur !' }),
+          el('h4', { text: GAMES.find(g => g.id === end.game).title }),
+          el('p', { class: 'ave', text: 'Ave, ' + crowned.pseudo + ' !' }),
+          el('p', { class: 'reign', text: crowned.deposed ? crowned.deposedPseudo + ' est détrôné·e.' : 'Le trône était vide : il est à toi.' })
+        ])
+      ]);
+    }
+
     function renderGameEnd(panel) {
       const { served, mistakes, best, record, saveFailed } = gameEnd;
       panel.appendChild(el('div', { class: 'card end-card' }, [
         art(TROPHY),
         el('h3', { class: 'game-title', text: 'Temps écoulé !' }),
+        coronation(gameEnd),
         el('p', { class: 'big-score' }, [el('strong', { text: formatPizzas(served) }), el('span', { text: served === 1 ? ' servie' : ' servies' })]),
         el('p', { class: 'verdict', text: endVerdict(served) }),
         el('p', { class: 'stat muted', text: mistakes + (mistakes === 1 ? ' erreur' : ' erreurs') }),
@@ -2692,6 +2732,7 @@
         el('div', { class: 'end-nazi', 'data-stink': String(STINK_STEPS.filter(n => hits >= n).length) }, [art(naziMarkup(hits ? NAZI_HERO_SPLATS : ''))]),
         el('p', { class: 'eyebrow', text: 'Siamo tutti antifascisti !' }),
         el('h3', { class: 'game-title', text: 'Temps écoulé !' }),
+        coronation(gameEnd),
         el('p', { class: 'big-score' }, [el('strong', { text: String(score) }), el('span', { text: score === 1 ? ' point' : ' points' })]),
         el('p', { class: 'verdict', text: siamoVerdict(score) }),
         el('p', { class: 'stat muted', text: hits + (hits === 1 ? ' touché' : ' touchés') + ' · ' + misses + (misses === 1 ? ' raté' : ' ratés') }),
