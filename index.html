@@ -1164,13 +1164,14 @@
     // Storage: Firestore (project in firebase-config.js, access rules in firestore.rules).
     // Each device signs in anonymously and its auth uid is its participant id:
     //   participants/{uid} { pseudo, created_at }, pizzas/{uid} { participant_id, name, photo, created_at },
-    //   votes/{pizzaId}_{uid} { pizza_id, voter_id, score, created_at }.
-    // The three collections are listened to live and mirrored in `state`, with created_at as epoch milliseconds.
+    //   votes/{pizzaId}_{uid} { pizza_id, voter_id, score, created_at },
+    //   game_best_scores/{game}_{uid} { participant_id, game, score, achieved_at }.
+    // The collections are listened to live and mirrored in `state`, with created_at and achieved_at as epoch milliseconds.
     // Votes are public: the ranking and Ma pizza list each voter with their score.
     // Averages and the ranking are computed from votes on every render, never stored.
     // A pizza's photo is a reduced JPEG data URL, or '' for the illustrated pizza.
-    // Mini-games never touch Firestore: the best score stays on this device, in localStorage under
-    // pps-best-<game>-<uid> (for example pps-best-pizzaiolo-<uid>), as the number of pizzas served.
+    // The best score per player and per game lives in Firestore, written only when beaten. The old
+    // localStorage value pps-best-<game>-<uid> is uploaded once, then cleared.
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
     import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
     import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -1184,8 +1185,8 @@
     const auth = getAuth(firebaseApp);
     const db = getFirestore(firebaseApp);
 
-    const COLLECTIONS = ['participants', 'pizzas', 'votes'];
-    let state = { participants: [], pizzas: [], votes: [] };
+    const COLLECTIONS = ['participants', 'pizzas', 'votes', 'game_best_scores'];
+    let state = { participants: [], pizzas: [], votes: [], game_best_scores: [] };
     // This device's participant id (its anonymous auth uid), set once signed in.
     let myUid = null;
     let currentTab = 'voter';
@@ -1242,6 +1243,14 @@
       const photo = isPhoto(rawPhoto) ? rawPhoto : '';
       return updateDoc(doc(db, 'pizzas', myUid), { name, photo }).then(() => ({ ok: true }),
         () => ({ error: photo ? 'Envoi impossible : réessaie, ou enregistre sans photo.' : NETWORK_ERROR }));
+    }
+
+    // A mini-game record only goes up: firestore.rules enforces it again (own record, integer ≥ 1,
+    // strictly above the stored one).
+    function saveBestScore(game, score) {
+      if (!Number.isInteger(score) || score < 1) return Promise.resolve({ error: 'Score invalide.' });
+      if (!currentParticipant()) return Promise.resolve({ error: 'Choisis d\'abord un pseudo.' });
+      return write(doc(db, 'game_best_scores', game + '_' + myUid), { participant_id: myUid, game, score, achieved_at: serverTimestamp() }, NETWORK_ERROR);
     }
 
     // Documents are create-only (a pizza's name and photo aside): a rejected write that passed
@@ -2114,15 +2123,32 @@
     let gameEnd = null;
     // True while the mafiosi are on screen, after the pineapple was used.
     let mafia = false;
+    const SAVE_FAILED = 'Record non enregistré : connexion impossible.';
 
-    function bestKey(gameId) {
-      return 'pps-best-' + gameId + '-' + myUid;
+    // This device's record for a game, from Firestore. A stored score that is not an integer ≥ 1 counts as no record.
+    function readBest(gameId) {
+      const best = state.game_best_scores.find(s => s.id === gameId + '_' + myUid);
+      return best && Number.isInteger(best.score) && best.score >= 1 ? best.score : null;
     }
 
-    // A stored value that is not a non-negative integer counts as no score.
-    function readBest(gameId) {
-      const raw = localStorage.getItem(bestKey(gameId));
-      return raw !== null && /^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) ? Number(raw) : null;
+    // True once this page load has uploaded (or dropped) the old localStorage records.
+    let oldBestsChecked = false;
+
+    // The record used to live in localStorage under pps-best-<game>-<uid>: upload it once when it beats
+    // the Firestore record, and clear the key (only after a successful upload, so a failure retries next load).
+    function uploadOldBests() {
+      oldBestsChecked = true;
+      GAMES.forEach(game => {
+        const key = 'pps-best-' + game.id + '-' + myUid;
+        const raw = localStorage.getItem(key);
+        const old = raw !== null && /^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) ? Number(raw) : 0;
+        const best = readBest(game.id);
+        if (old >= 1 && old > (best === null ? 0 : best)) {
+          saveBestScore(game.id, old).then(result => { if (result.ok) localStorage.removeItem(key); });
+        } else if (raw !== null) {
+          localStorage.removeItem(key);
+        }
+      });
     }
 
     function formatPizzas(n) {
@@ -2137,12 +2163,19 @@
       return list[Math.floor(Math.random() * list.length)];
     }
 
-    // Stores a finished round's score when it beats the record.
-    function saveBest(gameId, score) {
-      const best = readBest(gameId);
-      const record = score > (best === null ? 0 : best);
-      if (best === null || score > best) localStorage.setItem(bestKey(gameId), String(score));
-      return { best: best === null ? score : Math.max(best, score), record };
+    // Adds the record to a finished round's end card and, when beaten, saves it in Firestore
+    // without waiting. A rejected write is shown on that end card if it is still on screen.
+    function saveBest(end, score) {
+      const best = readBest(end.game) || 0;
+      Object.assign(end, { best: Math.max(best, score), record: score >= 1 && score > best });
+      if (end.record) {
+        saveBestScore(end.game, score).then(result => {
+          if (!result.error || gameEnd !== end) return;
+          end.saveFailed = true;
+          render();
+        });
+      }
+      return end;
     }
 
     function renderGames(panel) {
@@ -2219,7 +2252,7 @@
     function finishRound() {
       const { served, mistakes } = round;
       cancelRound();
-      gameEnd = { game: 'pizzaiolo', served, mistakes, ...saveBest('pizzaiolo', served) };
+      gameEnd = saveBest({ game: 'pizzaiolo', served, mistakes }, served);
       render();
       const again = app.querySelector('[data-action="again"]');
       if (again) again.focus();
@@ -2362,15 +2395,16 @@
     }
 
     function renderGameEnd(panel) {
-      const { served, mistakes, best, record } = gameEnd;
+      const { served, mistakes, best, record, saveFailed } = gameEnd;
       panel.appendChild(el('div', { class: 'card end-card' }, [
         art(TROPHY),
         el('h3', { class: 'game-title', text: 'Temps écoulé !' }),
         el('p', { class: 'big-score' }, [el('strong', { text: formatPizzas(served) }), el('span', { text: served === 1 ? ' servie' : ' servies' })]),
         el('p', { class: 'verdict', text: endVerdict(served) }),
         el('p', { class: 'stat muted', text: mistakes + (mistakes === 1 ? ' erreur' : ' erreurs') }),
-        el('p', { class: 'stat', text: 'Ton record : ' + formatPizzas(best) }),
+        best >= 1 ? el('p', { class: 'stat', text: 'Ton record : ' + formatPizzas(best) }) : null,
         record ? el('p', { class: 'record', text: 'Nouveau record !' }) : null,
+        saveFailed ? el('p', { class: 'stat muted', text: SAVE_FAILED }) : null,
         el('div', { class: 'end-actions' }, [
           el('button', { type: 'button', class: 'btn-secondary', text: 'Retour aux jeux', onclick: () => { gameEnd = null; render(); } }),
           el('button', { type: 'button', class: 'btn-primary', 'data-action': 'again', text: 'Rejouer', onclick: startRound })
@@ -2484,7 +2518,7 @@
     function finishSiamo() {
       const { score, hits, misses } = round;
       cancelRound();
-      gameEnd = { game: 'siamo', score, hits, misses, ...saveBest('siamo', score) };
+      gameEnd = saveBest({ game: 'siamo', score, hits, misses }, score);
       render();
       const again = app.querySelector('[data-action="again"]');
       if (again) again.focus();
@@ -2549,7 +2583,7 @@
     }
 
     function renderSiamoEnd(panel) {
-      const { score, hits, misses, best, record } = gameEnd;
+      const { score, hits, misses, best, record, saveFailed } = gameEnd;
       panel.appendChild(el('div', { class: 'card end-card' }, [
         el('div', { class: 'end-nazi', 'data-stink': String(STINK_STEPS.filter(n => hits >= n).length) }, [art(naziMarkup(hits ? NAZI_HERO_SPLATS : ''))]),
         el('p', { class: 'eyebrow', text: 'Siamo tutti antifascisti !' }),
@@ -2557,8 +2591,9 @@
         el('p', { class: 'big-score' }, [el('strong', { text: String(score) }), el('span', { text: score === 1 ? ' point' : ' points' })]),
         el('p', { class: 'verdict', text: siamoVerdict(score) }),
         el('p', { class: 'stat muted', text: hits + (hits === 1 ? ' touché' : ' touchés') + ' · ' + misses + (misses === 1 ? ' raté' : ' ratés') }),
-        el('p', { class: 'stat', text: 'Ton record : ' + formatPoints(best) }),
+        best >= 1 ? el('p', { class: 'stat', text: 'Ton record : ' + formatPoints(best) }) : null,
         record ? el('p', { class: 'record', text: 'Nouveau record !' }) : null,
+        saveFailed ? el('p', { class: 'stat muted', text: SAVE_FAILED }) : null,
         el('div', { class: 'end-actions' }, [
           el('button', { type: 'button', class: 'btn-secondary', text: 'Retour aux jeux', onclick: () => { gameEnd = null; render(); } }),
           el('button', { type: 'button', class: 'btn-primary', 'data-action': 'again', text: 'Rejouer', onclick: startSiamo })
@@ -2584,16 +2619,19 @@
     function listen() {
       const loaded = new Set();
       COLLECTIONS.forEach(name => {
+        const time = name === 'game_best_scores' ? 'achieved_at' : 'created_at';
         onSnapshot(collection(db, name), snapshot => {
           const before = currentParticipant();
           state = Object.assign({}, state, {
             [name]: snapshot.docs.map(d => {
               const data = d.data({ serverTimestamps: 'estimate' });
-              return Object.assign({}, data, { id: d.id, created_at: toMillis(data.created_at) });
+              return Object.assign({}, data, { id: d.id, [time]: toMillis(data[time]) });
             })
           });
           const first = !loaded.has(name) && loaded.add(name).size === COLLECTIONS.length;
-          if (loaded.size < COLLECTIONS.length || round || mafia) return;
+          if (loaded.size < COLLECTIONS.length) return;
+          if (!oldBestsChecked && currentParticipant()) uploadOldBests();
+          if (round || mafia) return;
           const after = currentParticipant();
           const typing = document.activeElement && document.activeElement.tagName === 'INPUT';
           if (!first && (before && before.id) === (after && after.id) && (typing || !after)) return;
